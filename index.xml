@@ -2,45 +2,45 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Bubble&#39;s blog</title>
-    <link>https://bubble.wiki/</link>
+    <link>http://localhost:1313/</link>
     <description>Recent content on Bubble&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 15 Jul 2024 17:02:03 +0800</lastBuildDate>
-    <atom:link href="https://bubble.wiki/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Aaa</title>
-      <link>https://bubble.wiki/posts/aaa/</link>
+      <link>http://localhost:1313/posts/aaa/</link>
       <pubDate>Mon, 15 Jul 2024 17:02:03 +0800</pubDate>
-      <guid>https://bubble.wiki/posts/aaa/</guid>
+      <guid>http://localhost:1313/posts/aaa/</guid>
       <description>HeLLO wORLD 🔗如果要用图片就</description>
     </item>
     <item>
       <title>Python Prototype chains pollution</title>
-      <link>https://bubble.wiki/posts/python-prototype-chains-pollution/</link>
+      <link>http://localhost:1313/posts/python-prototype-chains-pollution/</link>
       <pubDate>Thu, 11 Jul 2024 21:55:20 +0800</pubDate>
-      <guid>https://bubble.wiki/posts/python-prototype-chains-pollution/</guid>
+      <guid>http://localhost:1313/posts/python-prototype-chains-pollution/</guid>
       <description></description>
     </item>
     <item>
       <title></title>
-      <link>https://bubble.wiki/posts/</link>
+      <link>http://localhost:1313/posts/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://bubble.wiki/posts/</guid>
+      <guid>http://localhost:1313/posts/</guid>
       <description></description>
     </item>
     <item>
       <title>关于我</title>
-      <link>https://bubble.wiki/about/</link>
+      <link>http://localhost:1313/about/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://bubble.wiki/about/</guid>
+      <guid>http://localhost:1313/about/</guid>
       <description>关于我 🔗ID:BUBBLE</description>
     </item>
     <item>
       <title>友情链接</title>
-      <link>https://bubble.wiki/friend/</link>
+      <link>http://localhost:1313/friend/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://bubble.wiki/friend/</guid>
+      <guid>http://localhost:1313/friend/</guid>
       <description>chu0’s blog 一位大佬的博客</description>
     </item>
   </channel>
