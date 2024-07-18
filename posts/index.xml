@@ -6,28 +6,13 @@
     <description>Recent content in Posts on Bubble&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 15 Jul 2024 17:02:03 +0800</lastBuildDate>
     <atom:link href="http://localhost:1313/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Aaa</title>
-      <link>http://localhost:1313/posts/aaa/</link>
-      <pubDate>Mon, 15 Jul 2024 17:02:03 +0800</pubDate>
-      <guid>http://localhost:1313/posts/aaa/</guid>
-      <description>HeLLO wORLD 🔗如果要用图片就</description>
-    </item>
-    <item>
-      <title>Python Prototype chains pollution</title>
-      <link>http://localhost:1313/posts/python-prototype-chains-pollution/</link>
-      <pubDate>Thu, 11 Jul 2024 21:55:20 +0800</pubDate>
-      <guid>http://localhost:1313/posts/python-prototype-chains-pollution/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title></title>
-      <link>http://localhost:1313/posts/</link>
+      <title>md语法简介</title>
+      <link>http://localhost:1313/posts/md%E8%AF%AD%E6%B3%95%E7%AE%80%E4%BB%8B/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/posts/</guid>
-      <description></description>
+      <guid>http://localhost:1313/posts/md%E8%AF%AD%E6%B3%95%E7%AE%80%E4%BB%8B/</guid>
+      <description>序言 🔗第一次写博客，就先来学学md语法吧！希望后面可以坚持更新~ 正文 🔗标题 🔗标题有六级，写法: 示例效果： 一级标题 🔗二级标题 🔗三级标题 🔗四级标</description>
     </item>
   </channel>
 </rss>
