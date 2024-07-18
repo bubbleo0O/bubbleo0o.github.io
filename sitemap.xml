@@ -2,18 +2,18 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://localhost:1313/</loc>
+    <loc>https://bubble.wiki/</loc>
   </url><url>
-    <loc>http://localhost:1313/categories/</loc>
+    <loc>https://bubble.wiki/categories/</loc>
   </url><url>
-    <loc>http://localhost:1313/posts/md%E8%AF%AD%E6%B3%95%E7%AE%80%E4%BB%8B/</loc>
+    <loc>https://bubble.wiki/posts/md%E8%AF%AD%E6%B3%95%E7%AE%80%E4%BB%8B/</loc>
   </url><url>
-    <loc>http://localhost:1313/posts/</loc>
+    <loc>https://bubble.wiki/posts/</loc>
   </url><url>
-    <loc>http://localhost:1313/tags/</loc>
+    <loc>https://bubble.wiki/tags/</loc>
   </url><url>
-    <loc>http://localhost:1313/about/</loc>
+    <loc>https://bubble.wiki/about/</loc>
   </url><url>
-    <loc>http://localhost:1313/friend/</loc>
+    <loc>https://bubble.wiki/friend/</loc>
   </url>
 </urlset>
